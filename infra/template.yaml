@@ -1,0 +1,249 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ClauseGuard v1 MVP — Cost-minimal serverless B2B contract risk auditor
+  (API Gateway HTTP API + Lambda + S3 24h auto-delete + DynamoDB On-Demand + Budget Alarm).
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: amazon.nova-lite-v1:0
+    Description: Bedrock model ID for contract analysis (swappable via single env var)
+  DailyAuditCap:
+    Type: Number
+    Default: 50
+    Description: Hard per-day cap on AI contract audits to protect free tier/credits
+  BudgetAlertEmail:
+    Type: String
+    Default: ""
+    Description: Optional email address for AWS monthly $2.00 cost alarm
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Default: change-me-before-production-deploy
+    Description: Secret key used to sign authentication JWT tokens
+  MonobankJarUrl:
+    Type: String
+    Default: https://send.monobank.ua/jar/your-jar-id
+    Description: Configurable Monobank Jar URL for optional user donations
+
+Conditions:
+  HasBudgetEmail: !Not [!Equals [!Ref BudgetAlertEmail, ""]]
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Timeout: 60
+    MemorySize: 512
+
+Resources:
+  # 1. Encrypted temporary upload bucket (auto-deletes contracts after 24 hours)
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteUploadsAfter24Hours
+            Status: Enabled
+            ExpirationInDays: 1
+
+  # 2. Single-table DynamoDB store for Users, Audits (24h TTL), and Daily Usage Caps
+  ClauseGuardTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # 3. API Gateway HTTP API with stage throttling
+  ClauseGuardApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+
+  # 4. Serverless API Lambda Function
+  ClauseGuardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/.lambda-build
+      Handler: dist/lambda.handler
+      Environment:
+        Variables:
+          NODE_ENV: production
+          UPLOADS_BUCKET: !Ref UploadsBucket
+          DYNAMO_TABLE: !Ref ClauseGuardTable
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          DAILY_AUDIT_CAP: !Ref DailyAuditCap
+          JWT_SECRET: !Ref JwtSecret
+          MONOBANK_JAR_URL: !Ref MonobankJarUrl
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ClauseGuardTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: "*"
+      Events:
+        ProxyApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ClauseGuardApi
+            Path: /{proxy+}
+            Method: ANY
+
+  # 5. HTTPS Frontend Hosting (Private S3 Bucket + CloudFront OAC)
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-frontend-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        Origins:
+          - Id: S3FrontendOrigin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: S3FrontendOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution}"
+
+  # 6. AWS Monthly Cost Budget Alarm ($2.00 cap)
+  MonthlyCostBudget:
+    Type: AWS::Budgets::Budget
+    Condition: HasBudgetEmail
+    Properties:
+      Budget:
+        BudgetName: ClauseGuard-Monthly-Cap
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 2.0
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetAlertEmail
+
+Outputs:
+  ApiEndpoint:
+    Description: HTTPS API Gateway endpoint URL
+    Value: !Sub "https://${ClauseGuardApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  FrontendUrl:
+    Description: HTTPS CloudFront URL for ClauseGuard web UI
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
+  FrontendBucketName:
+    Description: Private S3 bucket storing built frontend assets
+    Value: !Ref FrontendBucket
+  FrontendDistributionId:
+    Description: CloudFront distribution ID for cache invalidation
+    Value: !Ref FrontendDistribution
+  UploadsBucketName:
+    Description: Encrypted S3 bucket for temporary 24h uploads
+    Value: !Ref UploadsBucket
+  DynamoTableName:
+    Description: DynamoDB table name
+    Value: !Ref ClauseGuardTable

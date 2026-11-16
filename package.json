@@ -1,0 +1,19 @@
+{
+  "name": "clauseguard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ClauseGuard — AI B2B contract risk auditor for Ukrainian IT freelancers & digital agencies",
+  "scripts": {
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "generate:samples": "npm --prefix backend run generate:samples",
+    "test:phase1": "npm --prefix backend run test:phase1",
+    "test:phase2": "npm --prefix backend run test:phase2",
+    "test:phase3": "npm --prefix backend run test:phase3",
+    "test:phase4": "npm --prefix backend run test:phase4",
+    "test:all": "npm run test:phase1 && npm run test:phase2 && npm run test:phase3 && npm run test:phase4",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "deploy:aws": "bash infra/deploy.sh"
+  }
+}

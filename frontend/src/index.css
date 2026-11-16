@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    color: #141413;
+    background-color: #f7f5f0;
+  }
+
+  * {
+    border-radius: 0px !important;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible {
+    outline: 2px solid #0f4c3a;
+    outline-offset: 2px;
+  }
+}

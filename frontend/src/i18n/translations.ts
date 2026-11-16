@@ -1,0 +1,394 @@
+export type UILanguage = 'en' | 'uk';
+
+export interface SpecimenClause {
+  id: string;
+  tabLabel: string;
+  clauseRef: string;
+  riskLabel: string;
+  originalExcerpt: string;
+  plainLanguageSummary: string;
+  counterClause: string;
+}
+
+export const translations = {
+  en: {
+    brand: 'ClauseGuard',
+    disclaimerBadge: 'NOT LEGAL ADVICE',
+    disclaimerBanner:
+      'ClauseGuard checks B2B contracts for commercial risks and is not legal advice. Files are encrypted and deleted after 24 hours.',
+    nav: {
+      donate: 'Donate (Monobank)',
+      signIn: 'Sign in',
+      signUp: 'Create account',
+      signOut: 'Sign out',
+    },
+    workspace: {
+      eyebrow: 'FREE CONTRACT CHECK FOR UKRAINIAN FOP & DIGITAL AGENCIES',
+      title: 'Check a client contract before you sign it.',
+      subtitle:
+        'Upload your .docx or .pdf agreement. We pull out risky terms like unlimited liability, late payouts, or unfair IP grabs, explain them in two plain sentences, and give you fair replacement wording to copy.',
+      steps: [
+        { num: '01', title: 'Upload contract', desc: 'Drag & drop .docx or digital .pdf (free, no paywall)' },
+        { num: '02', title: 'Read plain-language risks', desc: 'See dangerous clauses highlighted with High / Medium / Low tags' },
+        { num: '03', title: 'Copy fair wording', desc: 'Send balanced counter-clauses back to your client' },
+      ],
+    },
+    upload: {
+      sectionTitle: 'Upload your contract',
+      dropzoneTitle: 'Drop your .docx or .pdf file here, or click to choose',
+      dropzoneHint: 'Up to 10 MB and 30 pages. Scanned image-only PDFs are blocked (no paid OCR).',
+      processingReading: 'Reading contract & validating format...',
+      processingAnalyzing: 'Analyzing clauses for liability & payment traps...',
+      processingCounterClauses: 'Writing plain-language summaries & counter-clauses...',
+      samplesHeading: 'Or test instantly with a sample contract',
+      samplesSubheading: 'No file handy? Click any sample below to inspect how ClauseGuard reads it.',
+      runTest: 'Audit sample',
+      runTestError: 'Test scan error',
+      downloadSample: 'Download',
+      errors: {
+        SCANNED_PDF_DETECTED:
+          'This PDF looks like a scanned photo with no selectable text. Paid OCR is turned off to keep ClauseGuard free — please upload a digital PDF or .docx file.',
+        FILE_TOO_LARGE: 'This file is over 10 MB. Please upload a file under 10 MB.',
+        UNSUPPORTED_FILE_TYPE: 'Unsupported file type. Please upload only .docx or .pdf files.',
+        DOCUMENT_TOO_LONG: 'This document is over 30 pages (the v1 maximum).',
+        DAILY_CAP_REACHED: 'Daily free audit cap reached to protect API credits. Please try again tomorrow.',
+        GENERIC: 'Could not process this file.',
+      },
+    },
+    specimen: {
+      panelTitle: 'Example: what an audit looks like (from sample IT contract)',
+      col1Title: '1. What the contract says',
+      col2Title: '2. What it means for you',
+      col3Title: '3. Fair wording to send back',
+      copyBtn: 'Copy fair wording',
+      copiedBtn: 'Copied to clipboard',
+      items: [
+        {
+          id: 'liability',
+          tabLabel: 'Unlimited Liability (§ 5.1)',
+          clauseRef: 'Clause 5.1',
+          riskLabel: 'HIGH RISK · UNLIMITED LIABILITY',
+          originalExcerpt:
+            'Contractor shall indemnify, defend, and hold harmless Client from any and all claims, damages, lost profits, indirect, incidental, or consequential damages arising out of or relating to this Agreement. Contractor\'s aggregate liability under this Agreement shall be completely unlimited and uncapped.',
+          plainLanguageSummary:
+            'If something goes wrong on the project, the client can sue you for their lost business revenue with zero upper limit. A single dispute could cost more than your entire yearly FOP income.',
+          counterClause:
+            'Neither party shall be liable for indirect, incidental, or consequential damages or lost profits. Except for willful misconduct, each party\'s total liability under this Agreement shall not exceed the fees paid to Contractor in the last three (3) months.',
+        },
+        {
+          id: 'payment',
+          tabLabel: '60-Day Payout (§ 3.2)',
+          clauseRef: 'Clause 3.2',
+          riskLabel: 'HIGH RISK · DELAYED PAYMENT',
+          originalExcerpt:
+            'Client shall pay Contractor undisputed invoices within sixty (60) days after formal written acceptance of the final milestone, provided however that Client shall have no obligation to pay Contractor until Client has first received corresponding payment from its end-customer ("pay-when-paid").',
+          plainLanguageSummary:
+            'You wait 60 days after final approval to get paid, and the client can delay paying you forever if their own customer pays late. You take on the client\'s business risk for free.',
+          counterClause:
+            'Client shall pay undisputed invoices within fifteen (15) calendar days of receipt, regardless of whether Client has been paid by any third party. Overdue amounts accrue late interest at 0.1% per day.',
+        },
+        {
+          id: 'ip',
+          tabLabel: 'Pre-Payment IP Grab (§ 4.1)',
+          clauseRef: 'Clause 4.1',
+          riskLabel: 'HIGH RISK · UNFAIR IP TRANSFER',
+          originalExcerpt:
+            'Upon creation, Contractor hereby irrevocably assigns to Client all worldwide right, title, and interest in all Deliverables, including any pre-existing code libraries, reusable templates, open-source helpers, developer tools, and general know-how utilized or incorporated by Contractor, regardless of whether invoices for such work have been paid.',
+          plainLanguageSummary:
+            'The client takes ownership of your work the second you write it—even if they never pay your invoice—and claims ownership of your own reusable libraries. You could be barred from reusing your own starter code on future projects.',
+          counterClause:
+            'Exclusive rights to custom Deliverables transfer to Client only after full payment of the relevant invoice. Contractor keeps ownership of all pre-existing tools, libraries, and general know-how, granting Client a non-exclusive license to use components embedded in paid Deliverables.',
+        },
+      ] as SpecimenClause[],
+    },
+    extraction: {
+      phaseBadge: 'RISK AUDIT COMPLETE',
+      riskScoreLabel: 'Risk score (0–100)',
+      riskRatingHigh: 'High risk — negotiate before signing',
+      riskRatingMed: 'Moderate risk — clarify key terms',
+      riskRatingLow: 'Low risk — looks balanced',
+      highRisks: 'High',
+      mediumRisks: 'Medium',
+      lowRisks: 'Low',
+      filterAll: 'All',
+      filterEmpty: 'No clauses flagged at this severity level.',
+      checklistTitle: 'Negotiation checklist',
+      flaggedTitle: 'Flagged risky clauses',
+      noRisksFound: 'No major risks were detected in the extracted clauses.',
+      col1Title: '1. Original clause excerpt',
+      col2Title: '2. What it means (2 sentences)',
+      col3Title: '3. Fair counter-clause',
+      copyBtn: 'Copy counter-clause',
+      copiedBtn: 'Copied',
+      copyShareLink: 'Copy audit link',
+      copiedShareLink: 'Link copied',
+      copyAllCounterClauses: 'Copy all counter-clauses',
+      copiedAllCounterClauses: 'All counter-clauses copied',
+      openDownloadPageBtn: '1-Page PDF Summary',
+      downloadPdfBtn: 'Download 1-Page PDF',
+      downloadingPdfBtn: 'Generating PDF...',
+      backToResultsBtn: 'Back to clause breakdown',
+      downloadPageTitle: '1-Page Executive Summary',
+      downloadPageSubtitle:
+        'A single-page PDF briefing containing the overall risk score (0–100), risk counts by severity, and your prioritized negotiation checklist.',
+      expiresNote: 'Auto-deletes within 24h',
+      rawClausesToggle: 'Show full contract text by clause',
+      hideRawClausesToggle: 'Hide full contract text',
+      flaggedClauseTag: 'FLAGGED',
+      cleanClauseTag: 'OK · NO TRAP DETECTED',
+      providerLabel: 'Engine',
+      newUpload: 'Check another contract',
+      fileName: 'Document',
+      pages: 'Pages',
+      words: 'Words',
+      language: 'Detected language',
+      clausesCount: 'Clauses found',
+      langLabels: {
+        en: 'English',
+        uk: 'Ukrainian',
+        mixed: 'Mixed (EN + UK)',
+      },
+      categories: {
+        UNLIMITED_LIABILITY: 'Unlimited Liability',
+        DELAYED_PAYMENT: 'Delayed Payment (>30d)',
+        UNFAIR_IP_TRANSFER: 'Unfair IP Transfer',
+        PENALTY_CLAUSES: 'Penalty Clauses',
+        UNFAIR_NON_COMPETE: 'Unfair Non-Compete',
+        OTHER_ASYMMETRIC_RISK: 'Asymmetric Risk',
+      },
+      severityLabels: {
+        HIGH: 'HIGH RISK',
+        MEDIUM: 'MEDIUM RISK',
+        LOW: 'LOW RISK',
+      },
+      clausesHeading: 'Separated contract clauses',
+      clausePrefix: 'Clause',
+    },
+    recentAudits: {
+      title: 'Your recent audits (saved 24h)',
+      empty: 'No active audits in the last 24 hours.',
+      openBtn: 'Open report',
+      scorePrefix: 'Score',
+    },
+    auditNotFound: {
+      loading: 'Loading audit report...',
+      title: 'Audit link not found or expired',
+      description:
+        'For privacy, ClauseGuard automatically deletes all uploaded contracts and audit results after 24 hours. Upload the contract again to run a fresh audit.',
+      backBtn: 'Back to upload',
+    },
+    auth: {
+      signInTitle: 'Sign in to ClauseGuard',
+      signUpTitle: 'Create a free account',
+      subtitle: 'Keep your checked contracts saved under your account.',
+      nameLabel: 'Your name or FOP / Agency name',
+      emailLabel: 'Email',
+      passwordLabel: 'Password (at least 6 characters)',
+      signInBtn: 'Sign in',
+      signUpBtn: 'Create account',
+      switchToSignUp: 'New here? Create a free account',
+      switchToSignIn: 'Already have an account? Sign in',
+      close: 'Close',
+    },
+    donation: {
+      title: 'Support ClauseGuard (Optional)',
+      description:
+        'ClauseGuard is 100% free with no paywall. If this tool helped you spot a risky clause or save on legal fees, you can leave a tip via Monobank Jar.',
+      openJar: 'Donate on Monobank',
+      testDonateBtn: 'Send test tip (Mock Gateway)',
+      donationSuccess: 'Thank you! Mock donation recorded:',
+      suggested: 'Choose an amount (UAH)',
+      close: 'Close',
+    },
+  },
+  uk: {
+    brand: 'ClauseGuard',
+    disclaimerBadge: 'НЕ Є ЮРИДИЧНОЮ ПОРАДОЮ',
+    disclaimerBanner:
+      'ClauseGuard перевіряє B2B-договори на комерційні ризики та не є юридичною консультацією. Файли шифруються і видаляються через 24 години.',
+    nav: {
+      donate: 'Донат (Монобанка)',
+      signIn: 'Увійти',
+      signUp: 'Реєстрація',
+      signOut: 'Вийти',
+    },
+    workspace: {
+      eyebrow: 'БЕЗКОШТОВНА ПЕРЕВІРКА ДОГОВОРІВ ДЛЯ ФОП ТА АГЕНЦІЙ',
+      title: 'Перевірте договір клієнта перед тим, як його підписати.',
+      subtitle:
+        'Завантажте файл .docx або .pdf. Сервіс знайде небезпечні умови (необмежену відповідальність, затримку оплати, передачу всіх прав на код), пояснить їх двома простими реченнями та підготує чесні правки.',
+      steps: [
+        { num: '01', title: 'Завантажте договір', desc: 'Перетягніть .docx або цифровий .pdf (безкоштовно)' },
+        { num: '02', title: 'Побачте приховані ризики', desc: 'Небезпечні пункти позначаються як Високий / Середній / Низький ризик' },
+        { num: '03', title: 'Скопіюйте правки', desc: 'Надішліть замовнику готове збалансоване формулювання' },
+      ],
+    },
+    upload: {
+      sectionTitle: 'Завантажити ваш договір',
+      dropzoneTitle: 'Перетягніть .docx або .pdf сюди, або натисніть для вибору',
+      dropzoneHint: 'До 10 МБ і до 30 сторінок. Скан-копії без тексту не приймаються (без платного OCR).',
+      processingReading: 'Читання файлу та перевірка формату...',
+      processingAnalyzing: 'Аналіз пунктів на ризики відповідальності та оплати...',
+      processingCounterClauses: 'Формування простих пояснень та зустрічних правок...',
+      samplesHeading: 'Або протестуйте одразу на готовому зразку',
+      samplesSubheading: 'Немає договору під рукою? Натисніть на будь-який приклад нижче.',
+      runTest: 'Перевірити зразок',
+      runTestError: 'Тест помилки скану',
+      downloadSample: 'Скачати',
+      errors: {
+        SCANNED_PDF_DETECTED:
+          'Це схоже на скан-копію або фото без тексту. Платний OCR вимкнено, щоб сервіс був безкоштовним — завантажте цифровий PDF або .docx.',
+        FILE_TOO_LARGE: 'Файл більший за 10 МБ. Завантажте менший файл.',
+        UNSUPPORTED_FILE_TYPE: 'Непідтримуваний формат. Приймаються лише .docx та .pdf.',
+        DOCUMENT_TOO_LONG: 'У документі понад 30 сторінок (ліміт першої версії).',
+        DAILY_CAP_REACHED: 'Досягнуто денний ліміт безкоштовних перевірок. Спробуйте завтра.',
+        GENERIC: 'Не вдалося обробити цей файл.',
+      },
+    },
+    specimen: {
+      panelTitle: 'Приклад: як виглядає перевірка пункту договору',
+      col1Title: '1. Що написано в договорі',
+      col2Title: '2. Що це означає для вас',
+      col3Title: '3. Чесне формулювання на заміну',
+      copyBtn: 'Копіювати правку',
+      copiedBtn: 'Скопійовано',
+      items: [
+        {
+          id: 'liability',
+          tabLabel: 'Необмежена відповідальність (§ 5.1)',
+          clauseRef: 'Пункт 5.1',
+          riskLabel: 'ВИСОКИЙ РИЗИК · БЕЗМЕЖНА ВІДПОВІДАЛЬНІСТЬ',
+          originalExcerpt:
+            'Виконавець несе повну та необмежену матеріальну відповідальність за будь-які прямі та непрямі збитки Замовника, включаючи упущену вигоду та репутаційні втрати, без встановлення будь-якої верхньої межі компенсації.',
+          plainLanguageSummary:
+            'За будь-яку помилку в проєкті замовник може вимагати від вас компенсацію упущеного прибутку без верхньої межі. Один конфлікт може коштувати більше, ніж ваш річний дохід ФОП.',
+          counterClause:
+            'Жодна зі Сторін не несе відповідальності за упущену вигоду чи непрямі збитки. За винятком умисного порушення, загальна відповідальність Виконавця обмежується сумою фактично сплачених коштів за останні 3 (три) місяці.',
+        },
+        {
+          id: 'payment',
+          tabLabel: 'Оплата через 60 днів (§ 3.4)',
+          clauseRef: 'Пункт 3.4',
+          riskLabel: 'ВИСОКИЙ РИЗИК · ЗАТРИМКА ОПЛАТИ',
+          originalExcerpt:
+            'Оплата вартості послуг здійснюється Замовником протягом шістдесяти (60) банківських днів з дати підписання Акта наданих послуг та виключно за умови фактичного надходження валютної виручки від кінцевого клієнта Замовника.',
+          plainLanguageSummary:
+            'Ви чекаєте гроші мінімум 60 робочих днів після здачі роботи, а якщо кінцевий клієнт не заплатить вашому замовнику — ви можете не отримати оплату взагалі. Ви берете на себе чужий фінансовий ризик.',
+          counterClause:
+            'Замовник оплачує надані послуги протягом 10 (десяти) банківських днів з дати підписання Акта, незалежно від розрахунків Замовника з третіми особами. За прострочення нараховується пеня 0,1% за день.',
+        },
+        {
+          id: 'ip',
+          tabLabel: 'Захоплення IP до оплати (§ 4.2)',
+          clauseRef: 'Пункт 4.2',
+          riskLabel: 'ВИСОКИЙ РИЗИК · ПЕРЕДАЧА ПРАВ ДО ОПЛАТИ',
+          originalExcerpt:
+            'Усі виключні майнові права інтелектуальної власності на створений програмний код, а також на всі попередні напрацювання, власні бібліотеки, шаблони та методики Виконавця переходять до Замовника з моменту їх створення, незалежно від факту проведення оплати за цим Договором.',
+          plainLanguageSummary:
+            'Права на код переходять до замовника ще до того, як він вам заплатить, разом із вашими власними бібліотеками та шаблонами. Якщо замовник зникне без оплати, юридично код уже належить йому.',
+          counterClause:
+            'Виключні права на створений результат переходять до Замовника виключно після повної оплати відповідного рахунку. Попередні напрацювання та власні бібліотеки залишаються у власності Виконавця (Замовник отримує невиключну ліцензію на їх використання у складі результату).',
+        },
+      ] as SpecimenClause[],
+    },
+    extraction: {
+      phaseBadge: 'АУДИТ РИЗИКІВ ЗАВЕРШЕНО',
+      riskScoreLabel: 'Індекс ризику (0–100)',
+      riskRatingHigh: 'Високий ризик — потрібні правки',
+      riskRatingMed: 'Середній ризик — уточніть умови',
+      riskRatingLow: 'Низький ризик — договір збалансований',
+      highRisks: 'Високий',
+      mediumRisks: 'Середній',
+      lowRisks: 'Низький',
+      filterAll: 'Усі',
+      filterEmpty: 'Пунктів з таким рівнем ризику не знайдено.',
+      checklistTitle: 'Чекліст для переговорів',
+      flaggedTitle: 'Виявлені ризикові пункти',
+      noRisksFound: 'Критичних комерційних ризиків у витягнутих пунктах не знайдено.',
+      col1Title: '1. Оригінал пункту договору',
+      col2Title: '2. Практичне значення (2 речення)',
+      col3Title: '3. Збалансована правка',
+      copyBtn: 'Копіювати правку',
+      copiedBtn: 'Скопійовано',
+      copyShareLink: 'Копіювати посилання',
+      copiedShareLink: 'Посилання скопійовано',
+      copyAllCounterClauses: 'Копіювати всі правки',
+      copiedAllCounterClauses: 'Усі правки скопійовано',
+      openDownloadPageBtn: 'Звіт 1 стор. (PDF)',
+      downloadPdfBtn: 'Завантажити 1-стор. PDF',
+      downloadingPdfBtn: 'Генерування PDF...',
+      backToResultsBtn: 'Назад до розбору пунктів',
+      downloadPageTitle: 'Короткий звіт на 1 сторінку (Executive Summary)',
+      downloadPageSubtitle:
+        'Односторінковий PDF-документ із загальним індексом ризику (0–100), кількістю ризиків за рівнями та пріоритетним чеклістом для переговорів.',
+      expiresNote: 'Автовидалення через 24 год',
+      rawClausesToggle: 'Показати повний текст за пунктами',
+      hideRawClausesToggle: 'Сховати повний текст',
+      flaggedClauseTag: 'РИЗИК',
+      cleanClauseTag: 'ОК · БЕЗ ПАСТОК',
+      providerLabel: 'Рушій',
+      newUpload: 'Перевірити інший договір',
+      fileName: 'Документ',
+      pages: 'Сторінок',
+      words: 'Слів',
+      language: 'Мова',
+      clausesCount: 'Знайдено пунктів',
+      langLabels: {
+        en: 'Англійська',
+        uk: 'Українська',
+        mixed: 'Змішана (EN + UK)',
+      },
+      categories: {
+        UNLIMITED_LIABILITY: 'Необмежена відповідальність',
+        DELAYED_PAYMENT: 'Затримка оплати (>30 дн.)',
+        UNFAIR_IP_TRANSFER: 'Несправедлива передача IP',
+        PENALTY_CLAUSES: 'Штрафні санкції',
+        UNFAIR_NON_COMPETE: 'Несправедливий Non-Compete',
+        OTHER_ASYMMETRIC_RISK: 'Асиметричний ризик',
+      },
+      severityLabels: {
+        HIGH: 'ВИСОКИЙ РИЗИК',
+        MEDIUM: 'СЕРЕДНІЙ РИЗИК',
+        LOW: 'НИЗЬКИЙ РИЗИК',
+      },
+      clausesHeading: 'Усі виділені пункти договору',
+      clausePrefix: 'Пункт',
+    },
+    recentAudits: {
+      title: 'Ваші останні перевірки (зберігаються 24 год)',
+      empty: 'За останні 24 години активних перевірок немає.',
+      openBtn: 'Відкрити звіт',
+      scorePrefix: 'Ризик',
+    },
+    auditNotFound: {
+      loading: 'Завантаження звіту...',
+      title: 'Посилання на аудит не знайдено або термін дії минув',
+      description:
+        'Для захисту конфіденційності ClauseGuard автоматично видаляє завантажені договори та результати через 24 години. Завантажте файл повторно для нової перевірки.',
+      backBtn: 'Повернутися до завантаження',
+    },
+    auth: {
+      signInTitle: 'Увійти до ClauseGuard',
+      signUpTitle: 'Створити безкоштовний акаунт',
+      subtitle: 'Зберігайте перевірені договори у власному кабінеті.',
+      nameLabel: 'Ваше ім’я або назва ФОП / агенції',
+      emailLabel: 'Email',
+      passwordLabel: 'Пароль (мін. 6 символів)',
+      signInBtn: 'Увійти',
+      signUpBtn: 'Зареєструватися',
+      switchToSignUp: 'Немає акаунта? Створити безкоштовно',
+      switchToSignIn: 'Вже зареєстровані? Увійти',
+      close: 'Закрити',
+    },
+    donation: {
+      title: 'Підтримати ClauseGuard (необов’язково)',
+      description:
+        'Сервіс на 100% безкоштовний. Якщо перевірка допомогла знайти небезпечний пункт або зекономити на юристі — можете підтримати проєкт донатом на Монобанку.',
+      openJar: 'Задонатити на Монобанку',
+      testDonateBtn: 'Тестовий донат (Mock-шлюз)',
+      donationSuccess: 'Дякуємо! Тестовий донат зафіксовано:',
+      suggested: 'Оберіть суму (грн)',
+      close: 'Закрити',
+    },
+  },
+} as const;

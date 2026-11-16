@@ -1,0 +1,41 @@
+{
+  "name": "clauseguard-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "generate:samples": "tsx scripts/generateSamples.ts",
+    "test:phase1": "tsx scripts/testPhase1.ts",
+    "test:phase2": "tsx scripts/testPhase2.ts",
+    "test:phase3": "tsx scripts/testPhase3.ts",
+    "test:phase4": "tsx scripts/testPhase4.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1169.0",
+    "@aws-sdk/client-dynamodb": "^3.1169.0",
+    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/lib-dynamodb": "^3.1169.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "cors": "^2.8.5",
+    "docx": "^8.5.0",
+    "express": "^4.21.1",
+    "mammoth": "^1.8.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-lib": "^1.17.1",
+    "serverless-http": "^4.0.0",
+    "unpdf": "^1.9.1",
+    "uuid": "^11.0.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.9.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

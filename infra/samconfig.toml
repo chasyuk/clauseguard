@@ -1,0 +1,9 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "clauseguard-mvp"
+resolve_s3 = true
+s3_prefix = "clauseguard-mvp"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "BedrockModelId=\"amazon.nova-lite-v1:0\" DailyAuditCap=\"50\""
