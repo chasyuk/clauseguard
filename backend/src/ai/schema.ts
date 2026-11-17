@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ClauseItem } from '../extraction/clauseSplitter.js';
+import { evaluateDealContextDiscrepancies } from './localAnalyzer.js';
 
 export const RiskCategorySchema = z.enum([
   'UNLIMITED_LIABILITY',
@@ -12,6 +13,29 @@ export const RiskCategorySchema = z.enum([
 
 export const RiskLevelSchema = z.enum(['HIGH', 'MEDIUM', 'LOW']);
 
+export const DealContextSchema = z.object({
+  agreedScope: z.string().optional(),
+  agreedTimeline: z.string().optional(),
+  agreedPayment: z.string().optional(),
+  agreedExclusions: z.string().optional(),
+  rawNotes: z.string().optional(),
+});
+
+export const ContextDiscrepancySchema = z.object({
+  dimension: z.enum([
+    'SCOPE_AND_DELIVERABLES',
+    'TIMELINE_AND_DEADLINES',
+    'PAYMENT_AND_MILESTONES',
+    'REVISIONS_AND_ACCEPTANCE',
+    'EXCLUSIONS_AND_IP',
+  ]),
+  status: z.enum(['MISMATCH', 'OMITTED_IN_CONTRACT', 'MATCH']),
+  agreedTerm: z.string().min(3),
+  contractTerm: z.string().min(3),
+  riskImpact: z.string().min(10),
+  suggestedAmendment: z.string().min(10),
+});
+
 export const FlaggedClauseSchema = z.object({
   clauseNumber: z.string().min(1).max(32),
   category: RiskCategorySchema,
@@ -19,6 +43,7 @@ export const FlaggedClauseSchema = z.object({
   originalExcerpt: z.string().min(15),
   plainLanguageSummary: z.string().min(20),
   counterClause: z.string().min(20),
+  vettedClauseId: z.string().optional(),
 });
 
 export const ContractAnalysisResultSchema = z.object({
@@ -27,12 +52,36 @@ export const ContractAnalysisResultSchema = z.object({
   executiveSummary: z.string().min(20),
   negotiationChecklist: z.array(z.string().min(5)).min(1).max(8),
   flaggedClauses: z.array(FlaggedClauseSchema),
+  contextAlignmentScore: z.number().int().min(0).max(100).optional(),
+  contextDiscrepancies: z.array(ContextDiscrepancySchema).optional().default([]),
 });
 
 export type RiskCategory = z.infer<typeof RiskCategorySchema>;
 export type RiskLevel = z.infer<typeof RiskLevelSchema>;
+export type DealContext = z.infer<typeof DealContextSchema>;
+export type ContextDiscrepancy = z.infer<typeof ContextDiscrepancySchema>;
 export type FlaggedClause = z.infer<typeof FlaggedClauseSchema>;
 export type ContractAnalysisResult = z.infer<typeof ContractAnalysisResultSchema>;
+
+export const CATEGORY_TO_VETTED_CLAUSE_ID: Record<RiskCategory, string> = {
+  UNLIMITED_LIABILITY: 'VETTED-LIAB-CAP3M-01',
+  DELAYED_PAYMENT: 'VETTED-PAY-MILESTONE-01',
+  UNFAIR_IP_TRANSFER: 'VETTED-IP-UPON-PAYMENT-01',
+  PENALTY_CLAUSES: 'VETTED-ACC-DEEMED-01',
+  UNFAIR_NON_COMPETE: 'VETTED-NDA-2YR-01',
+  OTHER_ASYMMETRIC_RISK: 'VETTED-TERM-14D-01',
+};
+
+export function hasDealContext(ctx?: DealContext): boolean {
+  if (!ctx) return false;
+  return Boolean(
+    ctx.agreedScope?.trim() ||
+      ctx.agreedTimeline?.trim() ||
+      ctx.agreedPayment?.trim() ||
+      ctx.agreedExclusions?.trim() ||
+      ctx.rawNotes?.trim(),
+  );
+}
 
 export class SchemaValidationError extends Error {
   constructor(message: string) {
@@ -107,6 +156,7 @@ function isExcerptGroundedInContract(excerpt: string, fullSourceLower: string): 
 export function parseAndValidateAnalysis(
   rawOutput: string,
   sourceClauses: ClauseItem[],
+  dealContext?: DealContext,
 ): ContractAnalysisResult {
   const jsonStr = extractRawJsonString(rawOutput);
   let parsedJson: unknown;
@@ -144,12 +194,32 @@ export function parseAndValidateAnalysis(
           : 'This creates a material commercial risk for the contractor.';
       return {
         ...flag,
+        vettedClauseId: flag.vettedClauseId || CATEGORY_TO_VETTED_CLAUSE_ID[flag.category],
         plainLanguageSummary: enforceTwoSentences(flag.plainLanguageSummary, fallback),
       };
     });
 
+  let contextDiscrepancies = data.contextDiscrepancies ?? [];
+  let contextAlignmentScore = data.contextAlignmentScore;
+
+  if (hasDealContext(dealContext) && contextDiscrepancies.length === 0) {
+    const reconciled = evaluateDealContextDiscrepancies(
+      sourceClauses,
+      dealContext,
+      data.contractLanguage,
+    );
+    contextDiscrepancies = reconciled.contextDiscrepancies;
+    contextAlignmentScore = reconciled.contextAlignmentScore;
+  } else if (hasDealContext(dealContext) && contextAlignmentScore === undefined) {
+    const mismatches = contextDiscrepancies.filter((d) => d.status === 'MISMATCH').length;
+    const omitted = contextDiscrepancies.filter((d) => d.status === 'OMITTED_IN_CONTRACT').length;
+    contextAlignmentScore = Math.max(5, Math.min(100, 100 - mismatches * 22 - omitted * 14));
+  }
+
   return {
     ...data,
     flaggedClauses: groundedClauses,
+    contextAlignmentScore,
+    contextDiscrepancies,
   };
 }

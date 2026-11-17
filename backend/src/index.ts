@@ -5,7 +5,22 @@ import express, { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { AnalysisError, analyzeContractClauses } from './ai/analyzeContract.js';
 import { SYSTEM_PROMPT } from './ai/prompt.js';
+import { DealContext, DealContextSchema, hasDealContext } from './ai/schema.js';
 import { AuthError, loginUser, signUpUser, verifyJwt } from './auth/authService.js';
+import {
+  BUILDER_SCENARIOS,
+  ClauseModuleType,
+  ClausePosture,
+  CONTRACT_TEMPLATES,
+  ContractParameters,
+  MODULE_TITLES,
+  VETTED_CLAUSES,
+} from './builder/clauseRegistry.js';
+import { assembleContractFromPlainText, BuilderLanguage } from './builder/contractBuilder.js';
+import {
+  generateAssembledContractDocx,
+  generateAssembledContractPdf,
+} from './builder/contractExport.js';
 import { config } from './config.js';
 import { DonationGateway, donationProvider } from './donation/donationProvider.js';
 import { ExtractionError } from './extraction/fileValidator.js';
@@ -27,32 +42,51 @@ export interface SampleMetadata {
   descriptionEn: string;
   descriptionUk: string;
   expectedOutcome: 'risky' | 'scanned_error';
+  defaultDealContext?: DealContext;
 }
 
 const SAMPLE_CATALOG: SampleMetadata[] = [
   {
     filename: '01_Predatory_IT_MSA_EN.docx',
-    labelEn: 'English IT MSA (5 Risks)',
-    labelUk: 'Англомовний IT MSA (5 ризиків)',
-    descriptionEn: 'Unlimited liability, Net 60 pay-when-paid, IP grab, $15k penalty, 24-mo non-compete',
-    descriptionUk: 'Необмежена відповідальність, Net 60, захоплення IP, штраф $15k, non-compete 24 міс.',
+    labelEn: 'English IT MSA (5 Risks + Context Mismatches)',
+    labelUk: 'Англомовний IT MSA (5 ризиків + розбіжності скоупу)',
+    descriptionEn: 'Unlimited liability, Net 60 pay-when-paid, IP grab, $15k penalty, 24-mo non-compete vs. Net 14 deal notes',
+    descriptionUk: 'Необмежена відповідальність, Net 60, IP-пастка, штраф $15k проти погодженого Net 14 та захищених бібліотек',
     expectedOutcome: 'risky',
+    defaultDealContext: {
+      agreedScope: 'Custom React/Node SaaS portal MVP (Auth, Billing, Admin Console) per approved sprint SOW',
+      agreedTimeline: '6-week delivery; 5 business days client review SLA; delays in client assets extend deadline',
+      agreedPayment: '$8,500 USD total (40% upfront deposit, Net 14 calendar days unconditionally)',
+      agreedExclusions: 'Contractor pre-existing utility libraries, UI templates, and post-launch DevOps support excluded',
+    },
   },
   {
     filename: '02_Unfair_FOP_SOW_UK.docx',
-    labelEn: 'Ukrainian FOP Contract (5 Risks)',
-    labelUk: 'Договір ФОП 3 групи (5 ризиків)',
-    descriptionEn: '60-day payout, pre-payment IP transfer, 5%/day penalty, 3-yr non-compete',
-    descriptionUk: 'Оплата 60 днів, передача IP до оплати, пеня 5%/день, non-compete 3 роки',
+    labelEn: 'Ukrainian FOP Contract (5 Risks + Context Mismatches)',
+    labelUk: 'Договір ФОП 3 групи (5 ризиків + розбіжності умов)',
+    descriptionEn: '60-day payout, pre-payment IP transfer, 5%/day penalty, 3-yr non-compete vs. agreed FOP terms',
+    descriptionUk: 'Оплата 60 днів, передача IP до оплати, пеня 5%/день, non-compete 3 роки проти домовлених умов ФОП',
     expectedOutcome: 'risky',
+    defaultDealContext: {
+      agreedScope: 'Розробка веб-кабінету та REST API інтеграції за узгодженим ТЗ (2 раунди правок)',
+      agreedTimeline: '45 календарних днів від дати передоплати; 5 роб. днів на підписання Акта',
+      agreedPayment: 'Передоплата 40%, фінальна оплата 10 банківських днів незалежно від кінцевих клієнтів',
+      agreedExclusions: 'Власні бібліотеки Виконавця залишаються за ФОП; IP переходить виключно після повної оплати',
+    },
   },
   {
     filename: '03_Mixed_NDA_Service.pdf',
-    labelEn: 'Bilingual Digital PDF (4 Risks)',
-    labelUk: 'Двомовний цифровий PDF (4 ризики)',
+    labelEn: 'Bilingual Digital PDF (4 Risks + Context Check)',
+    labelUk: 'Двомовний цифровий PDF (4 ризики + контекст)',
     descriptionEn: 'Mixed EN/UK service agreement with $10k penalty, Net 45 & broad IP assignment',
     descriptionUk: 'Змішаний EN/UK договір зі штрафом $10k, Net 45 та широкою передачею IP',
     expectedOutcome: 'risky',
+    defaultDealContext: {
+      agreedScope: 'Frontend audit + performance optimization deliverables',
+      agreedTimeline: '3 weeks delivery with 5-day acceptance check',
+      agreedPayment: 'Net 14 days via SWIFT FOP invoice without unilateral holdbacks',
+      agreedExclusions: 'Portfolio citation right and pre-existing starter kits remain with Contractor',
+    },
   },
   {
     filename: '04_Scanned_Image_Only_Test.pdf',
@@ -77,16 +111,46 @@ function getOptionalUserId(req: Request): string | null {
   return payload?.sub ?? null;
 }
 
-async function resolveUploadBuffer(req: Request): Promise<{ fileName: string; buffer: Buffer }> {
+function parseDealContextFromRequest(
+  req: Request,
+  sampleDefaultContext?: DealContext,
+): DealContext | undefined {
+  let rawCtx: unknown = req.body?.dealContext;
+  if (typeof rawCtx === 'string' && rawCtx.trim()) {
+    const trimmed = rawCtx.trim();
+    try {
+      rawCtx = JSON.parse(trimmed);
+    } catch {
+      rawCtx = { rawNotes: trimmed };
+    }
+  }
+
+  if (rawCtx && typeof rawCtx === 'object') {
+    const parsed = DealContextSchema.safeParse(rawCtx);
+    if (parsed.success && hasDealContext(parsed.data)) {
+      return parsed.data;
+    }
+  }
+
+  if (sampleDefaultContext && req.body?.useSampleDealContext !== false) {
+    return sampleDefaultContext;
+  }
+
+  return undefined;
+}
+
+async function resolveUploadBuffer(
+  req: Request,
+): Promise<{ fileName: string; buffer: Buffer; sampleMeta?: SampleMetadata }> {
   const sampleFilename = req.body?.sampleFilename;
   if (typeof sampleFilename === 'string' && sampleFilename.trim()) {
     const safeName = path.basename(sampleFilename.trim());
-    const allowed = SAMPLE_CATALOG.some((s) => s.filename === safeName);
-    if (!allowed) {
+    const sampleMeta = SAMPLE_CATALOG.find((s) => s.filename === safeName);
+    if (!sampleMeta) {
       throw new ExtractionError('UNSUPPORTED_FILE_TYPE', 'Invalid sample filename.', 404);
     }
     const buffer = await fs.readFile(path.join(config.samplesDir, safeName));
-    return { fileName: safeName, buffer };
+    return { fileName: safeName, buffer, sampleMeta };
   }
 
   if (!req.file) {
@@ -95,14 +159,24 @@ async function resolveUploadBuffer(req: Request): Promise<{ fileName: string; bu
   return { fileName: req.file.originalname, buffer: req.file.buffer };
 }
 
-async function runAnalysisOnAudit(record: AuditRecord, dailyCapOverride?: number): Promise<AuditRecord> {
+async function runAnalysisOnAudit(
+  record: AuditRecord,
+  dailyCapOverride?: number,
+  dealContextOverride?: DealContext,
+): Promise<AuditRecord> {
   if (record.analysis) {
     return record;
   }
 
+  const effectiveContext = hasDealContext(dealContextOverride)
+    ? dealContextOverride
+    : record.dealContext;
+
   await checkAndIncrementDailyCap(dailyCapOverride ?? config.dailyAuditCap);
   const startMs = Date.now();
-  const outcome = await analyzeContractClauses(record.clauses, record.language);
+  const outcome = await analyzeContractClauses(record.clauses, record.language, {
+    dealContext: effectiveContext,
+  });
 
   const flagged = outcome.analysis.flaggedClauses;
   const riskCounts = {
@@ -113,6 +187,7 @@ async function runAnalysisOnAudit(record: AuditRecord, dailyCapOverride?: number
 
   const updated: AuditRecord = {
     ...record,
+    ...(hasDealContext(effectiveContext) ? { dealContext: effectiveContext } : {}),
     analysis: outcome.analysis,
     analysisMeta: {
       provider: outcome.provider,
@@ -222,6 +297,85 @@ export function createApp(options?: { dailyAuditCap?: number }) {
     }
   });
 
+  // --- AI Contract Builder & Vetted Clause Library ---
+  app.get('/api/builder/templates', (_req: Request, res: Response) => {
+    res.json({
+      templates: CONTRACT_TEMPLATES,
+      clauses: VETTED_CLAUSES,
+      moduleTitles: MODULE_TITLES,
+      scenarios: BUILDER_SCENARIOS,
+    });
+  });
+
+  const handleAssembleRequest = async (req: Request) => {
+    const body = req.body ?? {};
+    if (body.sections && body.parameters && body.fullContractText) {
+      return body;
+    }
+    return assembleContractFromPlainText({
+      plainTextRequirements: String(body.plainTextRequirements ?? ''),
+      templateId: typeof body.templateId === 'string' ? body.templateId : undefined,
+      contractLanguage: body.contractLanguage as BuilderLanguage | undefined,
+      posture: body.posture as ClausePosture | undefined,
+      selectedClauseIds: body.selectedClauseIds as Partial<Record<ClauseModuleType, string>> | undefined,
+      parameterOverrides: body.parameterOverrides as Partial<ContractParameters> | undefined,
+    });
+  };
+
+  app.post('/api/builder/assemble', async (req: Request, res: Response) => {
+    try {
+      const assembled = await assembleContractFromPlainText({
+        plainTextRequirements: String(req.body?.plainTextRequirements ?? ''),
+        templateId: typeof req.body?.templateId === 'string' ? req.body.templateId : undefined,
+        contractLanguage: req.body?.contractLanguage as BuilderLanguage | undefined,
+        posture: req.body?.posture as ClausePosture | undefined,
+        selectedClauseIds: req.body?.selectedClauseIds as
+          | Partial<Record<ClauseModuleType, string>>
+          | undefined,
+        parameterOverrides: req.body?.parameterOverrides as Partial<ContractParameters> | undefined,
+      });
+      res.json(assembled);
+    } catch (err) {
+      res.status(400).json({
+        error: 'INVALID_BUILDER_INPUT',
+        message: err instanceof Error ? err.message : 'Unable to assemble contract.',
+      });
+    }
+  });
+
+  app.post('/api/builder/export/docx', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const assembled = await handleAssembleRequest(req);
+      const docxBuffer = await generateAssembledContractDocx(assembled);
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="ClauseGuard_${assembled.templateId || 'Contract'}.docx"`,
+      );
+      res.send(docxBuffer);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post('/api/builder/export/pdf', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const assembled = await handleAssembleRequest(req);
+      const pdfBuffer = await generateAssembledContractPdf(assembled);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="ClauseGuard_${assembled.templateId || 'Contract'}.pdf"`,
+      );
+      res.send(pdfBuffer);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // --- Phase 1 Document Upload & Text Extraction ---
   app.post(
     '/api/extract',
@@ -229,8 +383,9 @@ export function createApp(options?: { dailyAuditCap?: number }) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = getOptionalUserId(req);
-        const { fileName, buffer } = await resolveUploadBuffer(req);
-        const record = await processContractUpload(fileName, buffer, userId);
+        const { fileName, buffer, sampleMeta } = await resolveUploadBuffer(req);
+        const dealContext = parseDealContextFromRequest(req, sampleMeta?.defaultDealContext);
+        const record = await processContractUpload(fileName, buffer, userId, dealContext);
         res.status(201).json(record);
       } catch (err) {
         next(err);
@@ -249,7 +404,12 @@ export function createApp(options?: { dailyAuditCap?: number }) {
         });
         return;
       }
-      const analyzed = await runAnalysisOnAudit(record, options?.dailyAuditCap);
+      const dealContextOverride = parseDealContextFromRequest(req);
+      const analyzed = await runAnalysisOnAudit(
+        record,
+        options?.dailyAuditCap,
+        dealContextOverride,
+      );
       res.json(analyzed);
     } catch (err) {
       next(err);
@@ -263,9 +423,10 @@ export function createApp(options?: { dailyAuditCap?: number }) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const userId = getOptionalUserId(req);
-        const { fileName, buffer } = await resolveUploadBuffer(req);
-        const extracted = await processContractUpload(fileName, buffer, userId);
-        const analyzed = await runAnalysisOnAudit(extracted, options?.dailyAuditCap);
+        const { fileName, buffer, sampleMeta } = await resolveUploadBuffer(req);
+        const dealContext = parseDealContextFromRequest(req, sampleMeta?.defaultDealContext);
+        const extracted = await processContractUpload(fileName, buffer, userId, dealContext);
+        const analyzed = await runAnalysisOnAudit(extracted, options?.dailyAuditCap, dealContext);
         res.status(201).json(analyzed);
       } catch (err) {
         next(err);

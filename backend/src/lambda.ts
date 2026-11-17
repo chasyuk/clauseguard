@@ -4,7 +4,10 @@ import { createApp } from './index.js';
 const app = createApp();
 
 const rawHandler = serverlessHttp(app, {
-  binary: ['application/pdf'],
+  binary: [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ],
 });
 
 export const handler = async (event: any, context: any) => {

@@ -1,7 +1,11 @@
 import { ClauseItem, ContractLanguage } from '../extraction/clauseSplitter.js';
 import {
+  CATEGORY_TO_VETTED_CLAUSE_ID,
+  ContextDiscrepancy,
   ContractAnalysisResult,
+  DealContext,
   FlaggedClause,
+  hasDealContext,
   parseAndValidateAnalysis,
   RiskCategory,
   RiskLevel,
@@ -187,6 +191,265 @@ function isClauseUkrainian(text: string): boolean {
   return cyr > lat;
 }
 
+function findRelevantClauseExcerpt(clauses: ClauseItem[], pattern: RegExp): string | null {
+  const match = clauses.find((c) => pattern.test(`${c.title} ${c.text}`));
+  if (!match) return null;
+  const normalized = match.text.replace(/\s+/g, ' ').trim();
+  return `§${match.clauseNumber}: ${normalized.slice(0, 170)}${normalized.length > 170 ? '...' : ''}`;
+}
+
+function extractSignificantTokens(text: string): string[] {
+  return Array.from(
+    new Set(
+      text
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s.+-]/gu, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 4 && !/^(with|that|this|from|into|only|agreed|project|scope|договір|проєкт|роботи|строк|оплата|тільки)$/i.test(w)),
+    ),
+  );
+}
+
+/**
+ * Reconciles agreed project/SOW deal context against the actual contract clauses
+ * to surface hidden scope mismatches, timeline conflicts, and omitted protections.
+ */
+export function evaluateDealContextDiscrepancies(
+  clauses: ClauseItem[],
+  dealContext: DealContext | undefined,
+  lang: ContractLanguage,
+): { contextAlignmentScore?: number; contextDiscrepancies: ContextDiscrepancy[] } {
+  if (!hasDealContext(dealContext) || !dealContext) {
+    return { contextDiscrepancies: [] };
+  }
+
+  const isUk = lang === 'uk';
+  const fullText = clauses.map((c) => `${c.title} ${c.text}`).join('\n');
+  const lower = fullText.toLowerCase();
+  const discrepancies: ContextDiscrepancy[] = [];
+
+  // 1. SCOPE_AND_DELIVERABLES
+  const agreedScope = dealContext.agreedScope?.trim() || dealContext.rawNotes?.trim() || '';
+  if (agreedScope) {
+    const scopeExcerpt = findRelevantClauseExcerpt(
+      clauses,
+      /scope|services|deliverable|subject|предмет|послуг|результат|обсяг/i,
+    );
+    const hasOpenEndedScopeTrap =
+      /any other.*services|related services as requested|unrestricted|without additional fee|без.*додаткової оплати|будь-які супутні|на вимогу замовника/i.test(
+        lower,
+      );
+    const tokens = extractSignificantTokens(agreedScope);
+    const matchedTokens = tokens.filter((t) => lower.includes(t));
+    const coverageRatio = tokens.length > 0 ? matchedTokens.length / tokens.length : 1;
+
+    if (hasOpenEndedScopeTrap || (coverageRatio < 0.25 && tokens.length >= 2)) {
+      discrepancies.push({
+        dimension: 'SCOPE_AND_DELIVERABLES',
+        status: scopeExcerpt ? 'MISMATCH' : 'OMITTED_IN_CONTRACT',
+        agreedTerm: agreedScope,
+        contractTerm:
+          scopeExcerpt ??
+          (isUk
+            ? 'У тексті договору немає конкретної прив’язки до узгодженого скоупу.'
+            : 'Written draft lacks concrete deliverables matching the agreed scope.'),
+        riskImpact: isUk
+          ? 'Розмитий або розширений предмет робіт дозволяє клієнту вимагати додаткові модулі в межах старої ціни.'
+          : 'Missing or open-ended scope phrasing allows Client to demand extra modules under the original fee.',
+        suggestedAmendment: isUk
+          ? `1.1 Обсяг послуг обмежується виключно: «${agreedScope}». Будь-які інші модулі оформлюються через письмовий Change Order [VETTED-SCOPE-FIXED-01].`
+          : `1.1 Scope is strictly limited to: "${agreedScope}". Additional modules require a signed Change Order [VETTED-SCOPE-FIXED-01].`,
+      });
+    } else {
+      discrepancies.push({
+        dimension: 'SCOPE_AND_DELIVERABLES',
+        status: 'MATCH',
+        agreedTerm: agreedScope,
+        contractTerm: scopeExcerpt ?? agreedScope,
+        riskImpact: isUk
+          ? 'Письмовий предмет робіт збігається з ключовими результатами проєкту.'
+          : 'Written deliverables align cleanly with your agreed scope notes.',
+        suggestedAmendment: isUk
+          ? 'Збережіть поточну прив’язку до ТЗ та переконайтеся, що фінальний список модулів додано в Додаток.'
+          : 'Keep concrete deliverable references and ensure the final backlog list stays attached.',
+      });
+    }
+  }
+
+  // 2. TIMELINE_AND_DEADLINES
+  const agreedTimeline = dealContext.agreedTimeline?.trim() || '';
+  if (agreedTimeline) {
+    const timelineExcerpt = findRelevantClauseExcerpt(
+      clauses,
+      /deadline|schedule|delivery|milestone|penalt|строк|термін|етап|штраф|пен/i,
+    );
+    const hasStrictPenaltyTrap =
+      /\$15,000|\$10,000|50 000|2%|5%|liquidated penalty|time is of the essence|без права на виправлення|незалежно від затрим/i.test(
+        lower,
+      );
+    const timelineNums = agreedTimeline.match(/\d+/g) ?? [];
+    const dateMatched = timelineNums.length === 0 || timelineNums.some((n) => lower.includes(n));
+
+    if (hasStrictPenaltyTrap || !timelineExcerpt || !dateMatched) {
+      discrepancies.push({
+        dimension: 'TIMELINE_AND_DEADLINES',
+        status: !timelineExcerpt ? 'OMITTED_IN_CONTRACT' : 'MISMATCH',
+        agreedTerm: agreedTimeline,
+        contractTerm:
+          timelineExcerpt ??
+          (isUk
+            ? 'У договорі не зафіксовано узгоджений графік і залежність дедлайнів від фідбеку клієнта.'
+            : 'Contract omits the agreed deadline or Client feedback dependency relief.'),
+        riskImpact: isUk
+          ? 'Якщо клієнт затримає доступи чи макети, суворі дедлайни або велика пеня активуються проти виконавця.'
+          : 'Without Client dependency relief and realistic dates, Client delays could trigger penalties against you.',
+        suggestedAmendment: isUk
+          ? `Узгоджений графік: «${agreedTimeline}». Затримки з надання доступів чи погоджень Замовником автоматично зсувають дедлайн день-у-день [VETTED-CHG-BUFFER-02].`
+          : `Agreed schedule: "${agreedTimeline}". Any Client feedback or asset delay extends the deadline day-for-day without penalty [VETTED-CHG-BUFFER-02].`,
+      });
+    } else {
+      discrepancies.push({
+        dimension: 'TIMELINE_AND_DEADLINES',
+        status: 'MATCH',
+        agreedTerm: agreedTimeline,
+        contractTerm: timelineExcerpt,
+        riskImpact: isUk
+          ? 'Строки виконання у договорі узгоджуються з планом проєкту.'
+          : 'Stated delivery dates align with agreed project timeline.',
+        suggestedAmendment: isUk
+          ? 'Додайте згадку про перенесення строків у разі затримки доступів Замовника.'
+          : 'Verify explicit day-for-day extension if Client inputs arrive late.',
+      });
+    }
+  }
+
+  // 3. PAYMENT_AND_MILESTONES
+  const agreedPayment = dealContext.agreedPayment?.trim() || '';
+  if (agreedPayment) {
+    const payExcerpt = findRelevantClauseExcerpt(
+      clauses,
+      /pay|invoice|fee|compensation|оплат|рахунок|винагород|вартіст/i,
+    );
+    const hasBadPayTrap =
+      /60|sixty|шістдесят|45|forty-five|pay-when-paid|валютної виручки|невизначений/i.test(lower);
+    const expectsUpfront = /%|upfront|deposit|аванс|передоплат/i.test(agreedPayment);
+    const hasUpfrontInContract = /upfront|deposit|prepayment|аванс|передоплат/i.test(lower);
+
+    if (hasBadPayTrap || (expectsUpfront && !hasUpfrontInContract) || !payExcerpt) {
+      discrepancies.push({
+        dimension: 'PAYMENT_AND_MILESTONES',
+        status: !payExcerpt ? 'OMITTED_IN_CONTRACT' : 'MISMATCH',
+        agreedTerm: agreedPayment,
+        contractTerm:
+          payExcerpt ??
+          (isUk ? 'Графік оплати та аванс відсутні у договорі.' : 'Payment schedule is omitted in contract.'),
+        riskImpact: isUk
+          ? 'Розходження в умовах оплати (напр. Net 60 замість узгоджених 10–14 днів або відсутність передоплати) заморожує ваш кеш-фло.'
+          : 'Contract payment delay (or missing upfront deposit vs. agreed terms) forces you to finance the client’s project.',
+        suggestedAmendment: isUk
+          ? `Встановити оплату згідно з домовленістю («${agreedPayment}») незалежно від кінцевих клієнтів Замовника [VETTED-PAY-MILESTONE-01].`
+          : `Replace with agreed payment terms ("${agreedPayment}"), unconditional of third-party payments [VETTED-PAY-MILESTONE-01].`,
+      });
+    } else {
+      discrepancies.push({
+        dimension: 'PAYMENT_AND_MILESTONES',
+        status: 'MATCH',
+        agreedTerm: agreedPayment,
+        contractTerm: payExcerpt,
+        riskImpact: isUk
+          ? 'Умови оплати відповідають фінансовим домовленостям.'
+          : 'Payment schedule matches your agreed commercial terms.',
+        suggestedAmendment: isUk
+          ? 'Перевірте правильність банківських реквізитів та валюти платежу.'
+          : 'Confirm invoice currency and IBAN/SWIFT coordinates before kickoff.',
+      });
+    }
+  }
+
+  // 4. REVISIONS_AND_ACCEPTANCE
+  const acceptanceExcerpt = findRelevantClauseExcerpt(
+    clauses,
+    /accept|revision|approval|прийман|акт|правок|ревіз/i,
+  );
+  const hasAcceptanceTrap =
+    /sole discretion|unlimited revision|без обмеження часу|довільний строк|безкінечн/i.test(lower);
+  const hasDeemedAcceptance = /deemed accepted|вважаються прийнятими/i.test(lower);
+
+  if (hasAcceptanceTrap || (!hasDeemedAcceptance && (agreedScope || agreedTimeline))) {
+    discrepancies.push({
+      dimension: 'REVISIONS_AND_ACCEPTANCE',
+      status: hasAcceptanceTrap ? 'MISMATCH' : 'OMITTED_IN_CONTRACT',
+      agreedTerm: isUk
+        ? 'Фіксований строк приймання (5 робочих днів) та обмежена кількість раундів правок'
+        : '5-business-day acceptance SLA + capped revision cycles',
+      contractTerm:
+        acceptanceExcerpt ??
+        (isUk
+          ? 'Строк приймання робіт і ліміт раундів правок не визначені.'
+          : 'No automatic deemed-acceptance deadline or revision cap defined.'),
+      riskImpact: isUk
+        ? 'Замовник може тижнями не підписувати Акт або вимагати нескінченні переробки без доплати.'
+        : 'Client can stall milestone sign-off indefinitely or demand unlimited unpaid redesign cycles.',
+      suggestedAmendment: isUk
+        ? 'Додати правило: якщо впродовж 5 робочих днів не надано письмових зауважень до ТЗ, етап вважається прийнятим; включено до 2 раундів правок [VETTED-ACC-DEEMED-01].'
+        : 'Add 5-business-day deemed acceptance and cap free revisions at 2 consolidated rounds [VETTED-ACC-DEEMED-01].',
+    });
+  }
+
+  // 5. EXCLUSIONS_AND_IP
+  const agreedExclusions = dealContext.agreedExclusions?.trim() || '';
+  if (agreedExclusions) {
+    const ipOrExclExcerpt = findRelevantClauseExcerpt(
+      clauses,
+      /exclu|out of scope|intellectual property|pre-existing|попередні|виключ|майнові права/i,
+    );
+    const hasIpOrExclusionConflict =
+      /pre-existing|попередні напрацювання|upon creation|до моменту оплати|незалежно від факту проведення оплати/i.test(
+        lower,
+      );
+    const exclTokens = extractSignificantTokens(agreedExclusions);
+    const exclCovered = exclTokens.some((t) => lower.includes(t));
+
+    if (hasIpOrExclusionConflict || !exclCovered) {
+      discrepancies.push({
+        dimension: 'EXCLUSIONS_AND_IP',
+        status: hasIpOrExclusionConflict ? 'MISMATCH' : 'OMITTED_IN_CONTRACT',
+        agreedTerm: agreedExclusions,
+        contractTerm:
+          ipOrExclExcerpt ??
+          (isUk
+            ? 'Узгоджені виключення чи захист власних інструментів не закріплені в тексті.'
+            : 'Agreed out-of-scope exclusions / background tool carve-outs are omitted.'),
+        riskImpact: isUk
+          ? 'Ви ризикуєте безоплатно робити виключені задачі або втратити права на власні бібліотеки та код до оплати.'
+          : 'Omitted exclusions expose you to free extra work, and missing IP carve-outs jeopardize your starter tools.',
+        suggestedAmendment: isUk
+          ? `Явно виключити зі скоупу: «${agreedExclusions}». Права ІВ переходять лише після повної оплати, власні інструменти залишаються у Виконавця [VETTED-IP-UPON-PAYMENT-01].`
+          : `Explicitly exclude: "${agreedExclusions}". Custom IP transfers solely upon full payment; background tools remain yours [VETTED-IP-UPON-PAYMENT-01].`,
+      });
+    } else {
+      discrepancies.push({
+        dimension: 'EXCLUSIONS_AND_IP',
+        status: 'MATCH',
+        agreedTerm: agreedExclusions,
+        contractTerm: ipOrExclExcerpt ?? agreedExclusions,
+        riskImpact: isUk
+          ? 'Виключення та застереження щодо ІВ враховані в договорі.'
+          : 'Exclusions and IP carve-outs are reflected cleanly.',
+        suggestedAmendment: isUk
+          ? 'Перевірте фінальне формулювання застереження щодо моменту переходу ІВ.'
+          : 'Double-check payment condition precedent on custom IP assignment.',
+      });
+    }
+  }
+
+  const mismatches = discrepancies.filter((d) => d.status === 'MISMATCH').length;
+  const omitted = discrepancies.filter((d) => d.status === 'OMITTED_IN_CONTRACT').length;
+  const contextAlignmentScore = Math.max(5, Math.min(100, 100 - mismatches * 22 - omitted * 14));
+
+  return { contextAlignmentScore, contextDiscrepancies: discrepancies };
+}
+
 /**
  * Deterministic grounded fallback analyzer used only when AWS Bedrock credentials are absent locally.
  * Validates output through the exact same Zod schema as live Bedrock responses.
@@ -194,6 +457,7 @@ function isClauseUkrainian(text: string): boolean {
 export function runLocalFallbackAnalysis(
   clauses: ClauseItem[],
   detectedLanguage: ContractLanguage,
+  dealContext?: DealContext,
 ): ContractAnalysisResult {
   const flaggedClauses: FlaggedClause[] = [];
 
@@ -213,6 +477,7 @@ export function runLocalFallbackAnalysis(
         category: rule.category,
         riskLevel: level,
         originalExcerpt: clause.text,
+        vettedClauseId: CATEGORY_TO_VETTED_CLAUSE_ID[rule.category],
         ...content,
       });
       // Match primary risk per clause to keep output concise and readable
@@ -225,28 +490,40 @@ export function runLocalFallbackAnalysis(
   const lowCount = flaggedClauses.filter((c) => c.riskLevel === 'LOW').length;
   const rawScore = Math.min(96, highCount * 20 + medCount * 11 + lowCount * 5);
 
+  const reconciliation = evaluateDealContextDiscrepancies(clauses, dealContext, detectedLanguage);
+  const gapCount = reconciliation.contextDiscrepancies.filter((d) => d.status !== 'MATCH').length;
+
   const isUkSummary = detectedLanguage === 'uk';
   const executiveSummary =
-    flaggedClauses.length === 0
+    flaggedClauses.length === 0 && gapCount === 0
       ? isUkSummary
         ? 'Критичних комерційних пасток у перевірених пунктах не виявлено. Проте перевірте реквізити сторін та графік платежів перед підписанням.'
         : 'No major commercial traps were detected in the extracted clauses. Still review party details and milestone schedules before signing.'
       : isUkSummary
-        ? `Виявлено ${flaggedClauses.length} ризикових умов (високий ризик: ${highCount}, середній: ${medCount}). Договір суттєво зміщує фінансові та юридичні ризики на виконавця і потребує правок перед підписанням.`
-        : `Detected ${flaggedClauses.length} risky clauses (${highCount} High, ${medCount} Medium). The current draft shifts disproportionate financial and IP risk onto the contractor and should be negotiated before signing.`;
+        ? `Виявлено ${flaggedClauses.length} ризикових умов (високий ризик: ${highCount}, середній: ${medCount})${gapCount > 0 ? ` та ${gapCount} розбіжностей із контекстом домовленостей проєкту` : ''}. Договір зміщує ризики на виконавця і потребує правок за перевіреними модулями перед підписанням.`
+        : `Detected ${flaggedClauses.length} risky clauses (${highCount} High, ${medCount} Medium)${gapCount > 0 ? ` and ${gapCount} project-context discrepancy item(s)` : ''}. The draft shifts disproportionate commercial risk onto the contractor and should be aligned using the vetted amendments below.`;
 
   const negotiationChecklist =
-    flaggedClauses.length === 0
+    flaggedClauses.length === 0 && gapCount === 0
       ? [
           isUkSummary
             ? 'Перевірте точні строки оплати та банківські реквізити.'
             : 'Confirm payment dates and banking details.',
         ]
-      : flaggedClauses.slice(0, 5).map((item) =>
-          isUkSummary
-            ? `Пункт ${item.clauseNumber} (${item.category}): запропонуйте збалансоване формулювання замість поточної редакції.`
-            : `Clause ${item.clauseNumber} (${item.category}): propose the balanced counter-clause wording before signing.`,
-        );
+      : [
+          ...flaggedClauses.slice(0, 4).map((item) =>
+            isUkSummary
+              ? `Пункт ${item.clauseNumber} (${item.category}): застосуйте перевірену правку ${item.vettedClauseId}.`
+              : `Clause ${item.clauseNumber} (${item.category}): propose vetted replacement ${item.vettedClauseId}.`,
+          ),
+          ...(gapCount > 0
+            ? [
+                isUkSummary
+                  ? `Узгодьте ${gapCount} розбіжност(ей) між контекстом проєкту (скоуп/дедлайни/оплата) та текстом SOW.`
+                  : `Resolve ${gapCount} mismatch(es) between your agreed project context (scope/deadlines/payment) and the written SOW.`,
+              ]
+            : []),
+        ];
 
   const candidateJson = JSON.stringify({
     contractLanguage: detectedLanguage,
@@ -254,7 +531,9 @@ export function runLocalFallbackAnalysis(
     executiveSummary,
     negotiationChecklist,
     flaggedClauses,
+    contextAlignmentScore: reconciliation.contextAlignmentScore,
+    contextDiscrepancies: reconciliation.contextDiscrepancies,
   });
 
-  return parseAndValidateAnalysis(candidateJson, clauses);
+  return parseAndValidateAnalysis(candidateJson, clauses, dealContext);
 }

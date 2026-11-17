@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Download, Loader2, Upload } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Download, Loader2, Upload } from 'lucide-react';
 import {
   analyzeAudit,
   ApiClientError,
@@ -10,13 +10,31 @@ import {
 } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { AuditExtractionRecord, SampleMetadata } from '../types';
+import { AuditExtractionRecord, DealContext, SampleMetadata } from '../types';
 
 interface UploadZoneProps {
   onExtracted: (record: AuditExtractionRecord) => void;
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
+
+function cleanDealContext(ctx: DealContext): DealContext | undefined {
+  const cleaned: DealContext = {
+    agreedScope: ctx.agreedScope?.trim() || undefined,
+    agreedTimeline: ctx.agreedTimeline?.trim() || undefined,
+    agreedPayment: ctx.agreedPayment?.trim() || undefined,
+    agreedExclusions: ctx.agreedExclusions?.trim() || undefined,
+  };
+  if (
+    !cleaned.agreedScope &&
+    !cleaned.agreedTimeline &&
+    !cleaned.agreedPayment &&
+    !cleaned.agreedExclusions
+  ) {
+    return undefined;
+  }
+  return cleaned;
+}
 
 export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const { t, lang } = useLanguage();
@@ -27,6 +45,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [samples, setSamples] = useState<SampleMetadata[]>([]);
+  const [showContextFields, setShowContextFields] = useState(true);
+  const [dealContext, setDealContext] = useState<DealContext>({
+    agreedScope: '',
+    agreedTimeline: '',
+    agreedPayment: '',
+    agreedExclusions: '',
+  });
 
   useEffect(() => {
     fetchSamples()
@@ -44,7 +69,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
     return t.upload.errors.GENERIC;
   };
 
-  const runExtractAndAnalyze = async (extractPromise: Promise<AuditExtractionRecord>) => {
+  const runExtractAndAnalyze = async (
+    extractPromise: Promise<AuditExtractionRecord>,
+    activeContext?: DealContext,
+  ) => {
     setLoadingStage(t.upload.processingReading);
     const extracted = await extractPromise;
 
@@ -54,7 +82,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
     }, 650);
 
     try {
-      const analyzed = await analyzeAudit(extracted.auditId, token);
+      const analyzed = await analyzeAudit(extracted.auditId, token, activeContext);
       onExtracted(analyzed);
     } finally {
       window.clearTimeout(timer);
@@ -73,8 +101,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
       return;
     }
 
+    const activeCtx = cleanDealContext(dealContext);
     try {
-      await runExtractAndAnalyze(extractContractFile(file, token));
+      await runExtractAndAnalyze(extractContractFile(file, token, activeCtx), activeCtx);
     } catch (err) {
       setErrorMessage(mapErrorMessage(err));
     } finally {
@@ -85,12 +114,31 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
 
   const handleSampleTest = async (filename: string) => {
     setErrorMessage(null);
+    const activeCtx = cleanDealContext(dealContext);
     try {
-      await runExtractAndAnalyze(extractSampleContract(filename, token));
+      await runExtractAndAnalyze(extractSampleContract(filename, token, activeCtx), activeCtx);
     } catch (err) {
       setErrorMessage(mapErrorMessage(err));
     } finally {
       setLoadingStage(null);
+    }
+  };
+
+  const loadPresetContext = (mode: 'en' | 'uk') => {
+    if (mode === 'en') {
+      setDealContext({
+        agreedScope: 'Custom React/Node SaaS portal MVP (Auth, Billing, Admin Console) per approved sprint SOW',
+        agreedTimeline: '6-week delivery; 5 business days client review SLA; delays in client assets extend deadline',
+        agreedPayment: '$8,500 USD total (40% upfront deposit, Net 14 calendar days unconditionally)',
+        agreedExclusions: 'Contractor pre-existing utility libraries, UI templates, and post-launch DevOps support excluded',
+      });
+    } else {
+      setDealContext({
+        agreedScope: 'Розробка веб-кабінету та REST API інтеграції за узгодженим ТЗ (2 раунди правок)',
+        agreedTimeline: '45 календарних днів від дати передоплати; 5 роб. днів на підписання Акта',
+        agreedPayment: 'Передоплата 40%, фінальна оплата 10 банківських днів незалежно від кінцевих клієнтів',
+        agreedExclusions: 'Власні бібліотеки Виконавця залишаються за ФОП; IP переходить виключно після повної оплати',
+      });
     }
   };
 
@@ -102,7 +150,137 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+    <div className="space-y-6">
+      {/* Deal Context Input Panel: Check Written SOW Against Agreed Project Reality */}
+      <section className="border border-surface-strong bg-surface-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
+          <div>
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
+              {t.dealContext.heading}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowContextFields((p) => !p)}
+            className="inline-flex items-center gap-1 border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-surface-strong"
+          >
+            <span>{showContextFields ? t.dealContext.toggleHide : t.dealContext.toggleShow}</span>
+            {showContextFields ? (
+              <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+
+        {showContextFields && (
+          <div className="space-y-4 p-4">
+            <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+              <p className="text-xs leading-relaxed text-ink-secondary">{t.dealContext.subheading}</p>
+              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => loadPresetContext('en')}
+                  className="border border-surface-border bg-surface-bg px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-brand hover:text-brand"
+                >
+                  {t.dealContext.presetEnBtn}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadPresetContext('uk')}
+                  className="border border-surface-border bg-surface-bg px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-brand hover:text-brand"
+                >
+                  {t.dealContext.presetUkBtn}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDealContext({
+                      agreedScope: '',
+                      agreedTimeline: '',
+                      agreedPayment: '',
+                      agreedExclusions: '',
+                    })
+                  }
+                  className="border border-surface-border px-2.5 py-1 font-mono text-[11px] text-ink-muted hover:text-ink-primary"
+                >
+                  {t.dealContext.clearBtn}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                  {t.dealContext.scopeLabel}
+                </label>
+                <input
+                  type="text"
+                  value={dealContext.agreedScope ?? ''}
+                  onChange={(e) =>
+                    setDealContext((prev) => ({ ...prev, agreedScope: e.target.value }))
+                  }
+                  placeholder={t.dealContext.scopePlaceholder}
+                  className="mt-1 w-full border border-surface-border bg-surface-bg px-3 py-2 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                  {t.dealContext.timelineLabel}
+                </label>
+                <input
+                  type="text"
+                  value={dealContext.agreedTimeline ?? ''}
+                  onChange={(e) =>
+                    setDealContext((prev) => ({ ...prev, agreedTimeline: e.target.value }))
+                  }
+                  placeholder={t.dealContext.timelinePlaceholder}
+                  className="mt-1 w-full border border-surface-border bg-surface-bg px-3 py-2 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                  {t.dealContext.paymentLabel}
+                </label>
+                <input
+                  type="text"
+                  value={dealContext.agreedPayment ?? ''}
+                  onChange={(e) =>
+                    setDealContext((prev) => ({ ...prev, agreedPayment: e.target.value }))
+                  }
+                  placeholder={t.dealContext.paymentPlaceholder}
+                  className="mt-1 w-full border border-surface-border bg-surface-bg px-3 py-2 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                  {t.dealContext.exclusionsLabel}
+                </label>
+                <input
+                  type="text"
+                  value={dealContext.agreedExclusions ?? ''}
+                  onChange={(e) =>
+                    setDealContext((prev) => ({ ...prev, agreedExclusions: e.target.value }))
+                  }
+                  placeholder={t.dealContext.exclusionsPlaceholder}
+                  className="mt-1 w-full border border-surface-border bg-surface-bg px-3 py-2 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {!cleanDealContext(dealContext) && (
+              <p className="border-l-2 border-brand bg-brand-subtle/40 px-3 py-1.5 text-[11px] text-ink-secondary">
+                {t.dealContext.sampleContextActive}
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Left 6 cols: Primary Drag-and-Drop Box */}
       <div className="flex flex-col border border-surface-strong bg-surface-card lg:col-span-6">
         <div className="border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
@@ -235,6 +413,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

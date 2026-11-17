@@ -5,6 +5,7 @@ import { runLocalFallbackAnalysis } from './localAnalyzer.js';
 import { buildUserPrompt, SYSTEM_PROMPT } from './prompt.js';
 import {
   ContractAnalysisResult,
+  DealContext,
   parseAndValidateAnalysis,
   SchemaValidationError,
 } from './schema.js';
@@ -81,11 +82,11 @@ function isMissingAwsCredentialsError(err: unknown): boolean {
 export async function analyzeContractClauses(
   clauses: ClauseItem[],
   detectedLanguage: ContractLanguage,
-  options?: { invokeFn?: LlmInvoker },
+  options?: { invokeFn?: LlmInvoker; dealContext?: DealContext },
 ): Promise<AnalysisOutcome> {
   if (config.bedrockMode === 'local' && !options?.invokeFn) {
     return {
-      analysis: runLocalFallbackAnalysis(clauses, detectedLanguage),
+      analysis: runLocalFallbackAnalysis(clauses, detectedLanguage, options?.dealContext),
       provider: 'local_fallback',
       modelId: 'local-rules-v1',
       attempts: 1,
@@ -93,7 +94,7 @@ export async function analyzeContractClauses(
   }
 
   const invokeFn = options?.invokeFn ?? defaultBedrockInvoke;
-  const userPrompt = buildUserPrompt(clauses, detectedLanguage);
+  const userPrompt = buildUserPrompt(clauses, detectedLanguage, options?.dealContext);
 
   let attempt = 1;
   let lastSchemaError = '';
@@ -106,7 +107,7 @@ export async function analyzeContractClauses(
 
     try {
       const rawResponse = await invokeFn(SYSTEM_PROMPT, promptForAttempt);
-      const validated = parseAndValidateAnalysis(rawResponse, clauses);
+      const validated = parseAndValidateAnalysis(rawResponse, clauses, options?.dealContext);
       return {
         analysis: validated,
         provider: 'bedrock',
@@ -135,7 +136,7 @@ export async function analyzeContractClauses(
           }),
         );
         return {
-          analysis: runLocalFallbackAnalysis(clauses, detectedLanguage),
+          analysis: runLocalFallbackAnalysis(clauses, detectedLanguage, options?.dealContext),
           provider: 'local_fallback',
           modelId: 'local-rules-v1',
           attempts: 1,

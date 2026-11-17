@@ -24,6 +24,16 @@ Before external user sessions, the team conducted internal UX and design reviews
 3. **Added Strict Scanned-PDF Rejection & 1-Page Executive Summary PDF**
    - *Feedback:* Uploading image-only PDFs without OCR previously triggered obscure parser errors, and users needed a concise sheet to review before client calls.
    - *Change Made:* Added clear localized `SCANNED_PDF_DETECTED` error banners (`422`) and a dedicated 1-page A4 Executive Summary PDF export supporting Ukrainian Cyrillic and English (`backend/src/pdf/executiveSummaryPdf.ts`).
+4. **Pivot After Product Critique: Vetted Clause Registry, AI Contract Builder & Context-Aware SOW Auditor**
+   - *Feedback Received:*
+     1. *"Overall, it is not clear how this differs from just asking Claude (or any other general AI assistant)."*
+     2. *"Much stronger as a set of templates for typical contracts, and even better as an AI contract builder: you describe your requirements in plain text, and the contract is assembled from standard, vetted clauses."*
+     3. *"Take an SOW: the hard part is checking it against the context of the project (what was actually agreed, scope, deadlines). Without that context, reviewing the text alone adds little."*
+   - *Changes Made:*
+     - Built a deterministic **Vetted Clause Registry** (`backend/src/builder/clauseRegistry.ts`) containing **16 pre-vetted B2B clauses (`[VETTED-*]`)** with Ukrainian FOP Group 3 / NBU Law No. 1724-VIII guardrails and **4 standard contract templates** (`TPL-FOP-SOW-FIXED`, `TPL-FOP-MSA`, `TPL-SOW-TM`, `TPL-MUTUAL-NDA`).
+     - Added an **AI Contract & SOW Builder** (`backend/src/builder/contractBuilder.ts`, `contractExport.ts`, `frontend/src/components/ContractBuilderView.tsx`) that extracts structured deal terms from plain text, detects omitted safeguards (`omittedWarnings`), assembles contracts strictly from vetted modules (never raw LLM prose), lets users toggle `CONTRACTOR_PROTECTIVE` vs `BALANCED` clause variants, and exports ready `.docx` and Unicode `.pdf` agreements.
+     - Upgraded the Auditor into a **Context-Aware SOW Reconciliation Engine** (`backend/src/ai/localAnalyzer.ts`, `prompt.ts`, `schema.ts`, `UploadZone.tsx`, `ResultsView.tsx`) that compares written SOW/MSA clauses against the user's actual agreed scope, timeline/deadlines, payment split, and exclusions, outputting a `MISMATCH` / `OMITTED_IN_CONTRACT` / `MATCH` discrepancy matrix with copyable amendments.
+     - Added a clear 3-pillar **"Why Use ClauseGuard Instead of a General AI Chatbot"** comparison strip and a browsable **Templates & Vetted Clause Library** (`ClauseLibraryView.tsx`) on the landing workspace.
 
 ---
 

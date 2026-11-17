@@ -378,6 +378,106 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         </div>
       </dl>
 
+      {/* Deal Context vs. Written SOW Discrepancy Matrix */}
+      {analysis && analysis.contextDiscrepancies && analysis.contextDiscrepancies.length > 0 && (
+        <section className="border border-surface-strong bg-surface-card">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-strong bg-surface-subtle px-4 py-3">
+            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
+              {t.discrepancyMatrix.title}
+            </h2>
+            {typeof analysis.contextAlignmentScore === 'number' && (
+              <span
+                className={`border px-2.5 py-0.5 font-mono text-xs font-semibold ${
+                  analysis.contextAlignmentScore >= 80
+                    ? 'border-risk-lowBorder bg-risk-lowBg text-risk-lowText'
+                    : analysis.contextAlignmentScore >= 50
+                      ? 'border-risk-medBorder bg-risk-medBg text-risk-medText'
+                      : 'border-risk-highBorder bg-risk-highBg text-risk-highText'
+                }`}
+              >
+                {t.discrepancyMatrix.alignmentLabel}: {analysis.contextAlignmentScore}/100
+              </span>
+            )}
+          </div>
+
+          <div className="divide-y divide-surface-border">
+            {analysis.contextDiscrepancies.map((item, idx) => {
+              const badgeStyle =
+                item.status === 'MISMATCH'
+                  ? 'border-risk-highBorder bg-risk-highBg text-risk-highText'
+                  : item.status === 'OMITTED_IN_CONTRACT'
+                    ? 'border-risk-medBorder bg-risk-medBg text-risk-medText'
+                    : 'border-risk-lowBorder bg-risk-lowBg text-risk-lowText';
+              const copyKey = `ctx-${idx}-${item.dimension}`;
+
+              return (
+                <article key={copyKey} className="p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3">
+                    <span className="text-xs font-semibold text-ink-primary">
+                      {t.discrepancyMatrix.dimensions[item.dimension]}
+                    </span>
+                    <span className={`border px-2 py-0.5 font-mono text-[10px] font-semibold ${badgeStyle}`}>
+                      {t.discrepancyMatrix.statusLabels[item.status]}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                    <div className="border border-surface-border bg-surface-bg p-3">
+                      <span className="block font-mono text-[10px] font-semibold uppercase text-ink-muted">
+                        {t.discrepancyMatrix.agreedCol}
+                      </span>
+                      <p className="mt-1.5 text-xs leading-relaxed text-ink-primary">
+                        {item.agreedTerm}
+                      </p>
+                    </div>
+
+                    <div className="border border-surface-border bg-surface-bg p-3">
+                      <span className="block font-mono text-[10px] font-semibold uppercase text-ink-muted">
+                        {t.discrepancyMatrix.contractCol}
+                      </span>
+                      <p className="mt-1.5 font-serif text-xs leading-relaxed text-ink-primary">
+                        {item.contractTerm}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col justify-between border border-surface-border bg-brand-subtle/30 p-3">
+                      <div>
+                        <span className="block font-mono text-[10px] font-semibold uppercase text-brand">
+                          {t.discrepancyMatrix.impactCol}
+                        </span>
+                        <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
+                          {item.riskImpact}
+                        </p>
+                        <p className="mt-2 border border-surface-border bg-surface-card p-2 text-xs text-ink-primary">
+                          {item.suggestedAmendment}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void copyWithFeedback(copyKey, item.suggestedAmendment)}
+                        className="mt-2 inline-flex items-center justify-center gap-1.5 border border-brand bg-brand px-2.5 py-1.5 text-[11px] font-medium text-white hover:bg-brand-hover"
+                      >
+                        {copiedKey === copyKey ? (
+                          <>
+                            <Check className="h-3 w-3" aria-hidden="true" />
+                            <span>{t.extraction.copiedBtn}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" aria-hidden="true" />
+                            <span>{t.discrepancyMatrix.copyAmendmentBtn}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Negotiation Checklist */}
       {analysis && analysis.negotiationChecklist.length > 0 && (
         <section className="border border-surface-strong bg-surface-card p-5">
@@ -483,9 +583,16 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                       </div>
 
                       <div className="flex flex-col bg-brand-subtle/40 p-4">
-                        <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand">
-                          {t.extraction.col3Title}
-                        </span>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand">
+                            {t.extraction.col3Title}
+                          </span>
+                          {flag.vettedClauseId && (
+                            <span className="border border-brand bg-surface-card px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                              {flag.vettedClauseId}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-2 flex-1 border border-surface-border bg-surface-card p-3 text-[13px] leading-relaxed text-ink-primary">
                           {flag.counterClause}
                         </p>

@@ -1,7 +1,14 @@
 import {
   ApiErrorPayload,
+  AssembledContractResult,
   AuditExtractionRecord,
   AuditSummaryItem,
+  BuilderCatalogResponse,
+  BuilderLanguage,
+  ClauseModuleType,
+  ClausePosture,
+  ContractParameters,
+  DealContext,
   PublicUser,
   SampleMetadata,
 } from '../types';
@@ -48,9 +55,13 @@ export async function fetchSamples(): Promise<SampleMetadata[]> {
 export async function extractContractFile(
   file: File,
   token: string | null,
+  dealContext?: DealContext,
 ): Promise<AuditExtractionRecord> {
   const formData = new FormData();
   formData.append('file', file);
+  if (dealContext) {
+    formData.append('dealContext', JSON.stringify(dealContext));
+  }
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -65,6 +76,7 @@ export async function extractContractFile(
 export async function extractSampleContract(
   sampleFilename: string,
   token: string | null,
+  dealContext?: DealContext,
 ): Promise<AuditExtractionRecord> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -72,7 +84,7 @@ export async function extractSampleContract(
   const res = await fetch(`${API_BASE}/api/extract`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ sampleFilename }),
+    body: JSON.stringify({ sampleFilename, dealContext }),
   });
   return handleResponse<AuditExtractionRecord>(res);
 }
@@ -80,15 +92,88 @@ export async function extractSampleContract(
 export async function analyzeAudit(
   auditId: string,
   token: string | null,
+  dealContext?: DealContext,
 ): Promise<AuditExtractionRecord> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}/api/audits/${encodeURIComponent(auditId)}/analyze`, {
     method: 'POST',
     headers,
+    body: JSON.stringify({ dealContext }),
   });
   return handleResponse<AuditExtractionRecord>(res);
+}
+
+// --- Phase 5: Vetted Clause Registry & AI Contract Builder ---
+
+export async function fetchBuilderCatalog(): Promise<BuilderCatalogResponse> {
+  const res = await fetch(`${API_BASE}/api/builder/templates`);
+  return handleResponse<BuilderCatalogResponse>(res);
+}
+
+export interface AssembleContractPayload {
+  plainTextRequirements: string;
+  templateId?: string;
+  contractLanguage?: BuilderLanguage;
+  posture?: ClausePosture;
+  selectedClauseIds?: Partial<Record<ClauseModuleType, string>>;
+  parameterOverrides?: Partial<ContractParameters>;
+}
+
+export async function assembleContract(
+  payload: AssembleContractPayload,
+): Promise<AssembledContractResult> {
+  const res = await fetch(`${API_BASE}/api/builder/assemble`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<AssembledContractResult>(res);
+}
+
+async function triggerBinaryDownload(
+  endpoint: string,
+  assembled: AssembledContractResult,
+  fileName: string,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(assembled),
+  });
+  if (!res.ok) {
+    throw new ApiClientError('EXPORT_ERROR', `Failed to export ${fileName}`, res.status);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function exportAssembledContractDocx(
+  assembled: AssembledContractResult,
+): Promise<void> {
+  return triggerBinaryDownload(
+    '/api/builder/export/docx',
+    assembled,
+    `ClauseGuard_${assembled.templateId}.docx`,
+  );
+}
+
+export async function exportAssembledContractPdf(
+  assembled: AssembledContractResult,
+): Promise<void> {
+  return triggerBinaryDownload(
+    '/api/builder/export/pdf',
+    assembled,
+    `ClauseGuard_${assembled.templateId}.pdf`,
+  );
 }
 
 export async function fetchAuditById(auditId: string): Promise<AuditExtractionRecord> {

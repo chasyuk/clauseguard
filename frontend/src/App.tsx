@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 import { fetchAuditById, fetchMyAudits } from './api/client';
 import { AuthModal } from './components/AuthModal';
+import { ClauseLibraryView } from './components/ClauseLibraryView';
+import { ContractBuilderView } from './components/ContractBuilderView';
 import { DonationModal } from './components/DonationModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
 import { Navbar } from './components/Navbar';
@@ -32,6 +34,10 @@ const MainShell: React.FC = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLoadError, setAuditLoadError] = useState(false);
   const [recentAudits, setRecentAudits] = useState<AuditSummaryItem[]>([]);
+  const [workspaceMode, setWorkspaceMode] = useState<'builder' | 'auditor' | 'library'>('builder');
+  const [builderTemplateOverride, setBuilderTemplateOverride] = useState<string | undefined>(
+    undefined,
+  );
 
   const loadAuditFromId = async (auditId: string) => {
     setLoadingAudit(true);
@@ -163,48 +169,113 @@ const MainShell: React.FC = () => {
               </div>
             </div>
 
-            {/* Signed-in User's Recent Audits (24h TTL) */}
-            {user && recentAudits.length > 0 && (
-              <section className="border border-surface-strong bg-surface-card">
-                <div className="border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
-                  <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
-                    {t.recentAudits.title}
-                  </h2>
-                </div>
-                <div className="divide-y divide-surface-border">
-                  {recentAudits.slice(0, 5).map((item) => (
-                    <div
-                      key={item.auditId}
-                      className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
-                    >
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-sm font-medium text-ink-primary">
-                          {item.fileName}
-                        </span>
-                        {item.overallRiskScore !== null && (
-                          <span className="border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
-                            {t.recentAudits.scorePrefix}: {item.overallRiskScore}/100
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void loadAuditFromId(item.auditId)}
-                        className="border border-surface-strong bg-surface-bg px-3 py-1 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
-                      >
-                        {t.recentAudits.openBtn}
-                      </button>
+            {/* Why ClauseGuard Differs from Generic AI Chatbots */}
+            <section className="space-y-3">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                {t.differentiator.heading}
+              </p>
+              <div className="grid grid-cols-1 divide-y divide-surface-border border border-surface-strong bg-surface-card md:grid-cols-3 md:divide-x md:divide-y-0">
+                {t.differentiator.cards.map((card) => (
+                  <div key={card.tag} className="p-4">
+                    <span className="inline-block border border-brand bg-brand-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                      {card.tag}
+                    </span>
+                    <h2 className="mt-2 font-serif text-base font-semibold text-ink-primary">
+                      {card.title}
+                    </h2>
+                    <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
+                      {card.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Primary 3-Mode Workspace Switcher */}
+            <nav
+              aria-label="Workspace modes"
+              className="grid grid-cols-1 border border-surface-strong bg-surface-card sm:grid-cols-3"
+            >
+              {(
+                [
+                  ['builder', t.modes.builder],
+                  ['auditor', t.modes.auditor],
+                  ['library', t.modes.library],
+                ] as const
+              ).map(([modeId, label]) => {
+                const active = workspaceMode === modeId;
+                return (
+                  <button
+                    key={modeId}
+                    type="button"
+                    onClick={() => setWorkspaceMode(modeId)}
+                    className={`border-b border-surface-border px-4 py-3 text-left font-mono text-xs font-semibold transition-colors sm:border-b-0 sm:border-r last:border-b-0 last:border-r-0 ${
+                      active
+                        ? 'bg-brand text-white'
+                        : 'bg-surface-subtle text-ink-primary hover:bg-surface-bg'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {workspaceMode === 'builder' ? (
+              <ContractBuilderView initialTemplateId={builderTemplateOverride} />
+            ) : workspaceMode === 'library' ? (
+              <ClauseLibraryView
+                onUseTemplate={(tplId) => {
+                  setBuilderTemplateOverride(tplId);
+                  setWorkspaceMode('builder');
+                }}
+              />
+            ) : (
+              <div className="space-y-8">
+                {/* Signed-in User's Recent Audits (24h TTL) */}
+                {user && recentAudits.length > 0 && (
+                  <section className="border border-surface-strong bg-surface-card">
+                    <div className="border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
+                      <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
+                        {t.recentAudits.title}
+                      </h2>
                     </div>
-                  ))}
-                </div>
-              </section>
+                    <div className="divide-y divide-surface-border">
+                      {recentAudits.slice(0, 5).map((item) => (
+                        <div
+                          key={item.auditId}
+                          className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
+                        >
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-medium text-ink-primary">
+                              {item.fileName}
+                            </span>
+                            {item.overallRiskScore !== null && (
+                              <span className="border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
+                                {t.recentAudits.scorePrefix}: {item.overallRiskScore}/100
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void loadAuditFromId(item.auditId)}
+                            className="border border-surface-strong bg-surface-bg px-3 py-1 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
+                          >
+                            {t.recentAudits.openBtn}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Context-Aware SOW Upload + Sample Contracts */}
+                <UploadZone onExtracted={openRecord} />
+
+                {/* Full-Width 3-Column Real Audit Specimen */}
+                <LiveClauseSpecimen />
+              </div>
             )}
-
-            {/* Primary Action: Upload Box + Sample Contracts */}
-            <UploadZone onExtracted={openRecord} />
-
-            {/* Full-Width 3-Column Real Audit Specimen */}
-            <LiveClauseSpecimen />
           </div>
         ) : (
           <ResultsView

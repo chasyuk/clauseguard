@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { DealContext, hasDealContext } from '../ai/schema.js';
 import { config } from '../config.js';
 import { AuditRecord, saveAudit } from '../storage/auditStore.js';
 import { storeEncryptedUploadIfConfigured } from '../storage/s3Client.js';
@@ -14,6 +15,7 @@ export async function processContractUpload(
   fileName: string,
   buffer: Buffer,
   userId: string | null = null,
+  dealContext?: DealContext,
 ): Promise<AuditRecord> {
   const startMs = Date.now();
   const validated = validateUploadedFile(fileName, buffer);
@@ -38,6 +40,7 @@ export async function processContractUpload(
     createdAt: now.toISOString(),
     expiresAt: expiresAt.toISOString(),
     ttlEpochSeconds: Math.floor(expiresAt.getTime() / 1000),
+    ...(hasDealContext(dealContext) ? { dealContext } : {}),
   };
 
   await storeEncryptedUploadIfConfigured(auditId, validated.extension, validated.buffer);

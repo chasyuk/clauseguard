@@ -10,7 +10,8 @@
     "test:phase1": "tsx scripts/testPhase1.ts",
     "test:phase2": "tsx scripts/testPhase2.ts",
     "test:phase3": "tsx scripts/testPhase3.ts",
-    "test:phase4": "tsx scripts/testPhase4.ts"
+    "test:phase4": "tsx scripts/testPhase4.ts",
+    "test:phase5": "tsx scripts/testPhase5.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1169.0",

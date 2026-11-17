@@ -8,7 +8,7 @@ import {
   QueryCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { ContractAnalysisResult } from '../ai/schema.js';
+import { ContractAnalysisResult, DealContext } from '../ai/schema.js';
 import { config } from '../config.js';
 import { ClauseItem, ContractLanguage } from '../extraction/clauseSplitter.js';
 import { SupportedExtension } from '../extraction/fileValidator.js';
@@ -47,6 +47,7 @@ export interface AuditRecord {
   createdAt: string;
   expiresAt: string;
   ttlEpochSeconds: number;
+  dealContext?: DealContext;
   analysis?: ContractAnalysisResult;
   analysisMeta?: AnalysisMeta;
 }

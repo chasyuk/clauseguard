@@ -1,4 +1,5 @@
 import { ClauseItem, ContractLanguage } from '../extraction/clauseSplitter.js';
+import { DealContext, hasDealContext } from './schema.js';
 
 export const SYSTEM_PROMPT = `You are ClauseGuard, an expert B2B contract risk auditor protecting independent IT contractors (including Ukrainian FOP Group 3 freelancers) and small digital agencies (3-15 people).
 
@@ -49,6 +50,12 @@ OUTPUT REQUIREMENTS PER FLAGGED CLAUSE:
 - "originalExcerpt": Exact verbatim quote copied from <contract_clauses>.
 - "plainLanguageSummary": EXACTLY 2 sentences explaining what the clause practically means in real life.
 - "counterClause": Balanced replacement wording written in formal contract language ready to copy-paste.
+- "vettedClauseId": Optional matching ClauseGuard standard ID (e.g. "VETTED-LIAB-CAP3M-01", "VETTED-PAY-MILESTONE-01", "VETTED-IP-UPON-PAYMENT-01", "VETTED-ACC-DEEMED-01", "VETTED-NDA-2YR-01", "VETTED-TERM-14D-01").
+
+PROJECT & DEAL CONTEXT RECONCILIATION (WHEN <deal_context> IS PROVIDED):
+Compare what was verbally/informally agreed in <deal_context> (scope, timeline/deadlines, payment terms, exclusions/IP) against what is actually written in <contract_clauses>. Output:
+- "contextAlignmentScore": integer 0-100 (100 = written contract fully reflects all agreed terms; lower if scope, payment, timeline, or exclusions conflict or were omitted).
+- "contextDiscrepancies": array of checks across "SCOPE_AND_DELIVERABLES", "TIMELINE_AND_DEADLINES", "PAYMENT_AND_MILESTONES", "REVISIONS_AND_ACCEPTANCE", and "EXCLUSIONS_AND_IP" with status "MISMATCH" | "OMITTED_IN_CONTRACT" | "MATCH", agreedTerm, contractTerm, riskImpact, and suggestedAmendment.
 
 STRICT JSON SCHEMA:
 Respond with ONLY a raw JSON object (no markdown code fences, no explanation before or after):
@@ -64,9 +71,12 @@ Respond with ONLY a raw JSON object (no markdown code fences, no explanation bef
       "riskLevel": "HIGH" | "MEDIUM" | "LOW",
       "originalExcerpt": "<verbatim quote from contract>",
       "plainLanguageSummary": "<Sentence 1. Sentence 2.>",
-      "counterClause": "<balanced replacement wording>"
+      "counterClause": "<balanced replacement wording>",
+      "vettedClauseId": "<optional standard ClauseGuard ID>"
     }
-  ]
+  ],
+  "contextAlignmentScore": <optional integer 0-100 when deal_context is present>,
+  "contextDiscrepancies": []
 }`;
 
 /**
@@ -75,15 +85,17 @@ Respond with ONLY a raw JSON object (no markdown code fences, no explanation bef
 export function sanitizeClauseForPrompt(text: string): string {
   return text
     .replace(/<\/?\s*contract_clauses\s*>/gi, '[REDACTED_TAG]')
+    .replace(/<\/?\s*deal_context\s*>/gi, '[REDACTED_TAG]')
     .replace(/<\/?\s*system\s*>/gi, '[REDACTED_TAG]');
 }
 
 /**
- * Formats extracted clauses inside an XML data container for single-call Bedrock analysis.
+ * Formats extracted clauses (and optional agreed project/deal context) inside XML containers for single-call Bedrock analysis.
  */
 export function buildUserPrompt(
   clauses: ClauseItem[],
   detectedLanguage: ContractLanguage,
+  dealContext?: DealContext,
 ): string {
   const formattedClauses = clauses
     .map(
@@ -92,8 +104,12 @@ export function buildUserPrompt(
     )
     .join('\n\n');
 
+  const contextSection = hasDealContext(dealContext)
+    ? `\n\nReconcile this draft against the contractor's agreed project context below (populate contextAlignmentScore and contextDiscrepancies):\n<deal_context>\nAgreed Scope & Deliverables: ${sanitizeClauseForPrompt(dealContext?.agreedScope || 'Not specified')}\nAgreed Timeline & Deadlines: ${sanitizeClauseForPrompt(dealContext?.agreedTimeline || 'Not specified')}\nAgreed Payment & Milestones: ${sanitizeClauseForPrompt(dealContext?.agreedPayment || 'Not specified')}\nAgreed Exclusions & IP Boundaries: ${sanitizeClauseForPrompt(dealContext?.agreedExclusions || 'Not specified')}\nAdditional Call/Slack Notes: ${sanitizeClauseForPrompt(dealContext?.rawNotes || 'None')}\n</deal_context>`
+    : '';
+
   return `Detected primary language hint: ${detectedLanguage}.
-Audit the untrusted contract clauses below and return ONLY valid JSON matching the required schema.
+Audit the untrusted contract clauses below and return ONLY valid JSON matching the required schema.${contextSection}
 
 <contract_clauses>
 ${formattedClauses}
