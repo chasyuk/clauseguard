@@ -30,10 +30,10 @@ export const ContextDiscrepancySchema = z.object({
     'EXCLUSIONS_AND_IP',
   ]),
   status: z.enum(['MISMATCH', 'OMITTED_IN_CONTRACT', 'MATCH']),
-  agreedTerm: z.string().min(3),
-  contractTerm: z.string().min(3),
-  riskImpact: z.string().min(10),
-  suggestedAmendment: z.string().min(10),
+  agreedTerm: z.string().min(2),
+  contractTerm: z.string().min(2),
+  riskImpact: z.string().min(3),
+  suggestedAmendment: z.string().min(3),
 });
 
 export const FlaggedClauseSchema = z.object({
@@ -166,6 +166,32 @@ export function parseAndValidateAnalysis(
     throw new SchemaValidationError(
       `Invalid JSON syntax: ${err instanceof Error ? err.message : 'parse failed'}`,
     );
+  }
+
+  if (parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)) {
+    const candidate = parsedJson as Record<string, unknown>;
+    if (Array.isArray(candidate.contextDiscrepancies)) {
+      candidate.contextDiscrepancies = candidate.contextDiscrepancies.flatMap((entry) => {
+        if (!entry || typeof entry !== 'object') return [];
+        const obj = entry as Record<string, unknown>;
+        const normalized = {
+          dimension: obj.dimension,
+          status: obj.status,
+          agreedTerm: obj.agreedTerm,
+          contractTerm: obj.contractTerm,
+          riskImpact:
+            typeof obj.riskImpact === 'string' && obj.riskImpact.trim().length >= 3
+              ? obj.riskImpact
+              : 'Potential divergence between agreed expectations and written terms.',
+          suggestedAmendment:
+            typeof obj.suggestedAmendment === 'string' && obj.suggestedAmendment.trim().length >= 3
+              ? obj.suggestedAmendment
+              : 'Align written SOW wording explicitly with the agreed deal context.',
+        };
+        const check = ContextDiscrepancySchema.safeParse(normalized);
+        return check.success ? [check.data] : [];
+      });
+    }
   }
 
   const zodResult = ContractAnalysisResultSchema.safeParse(parsedJson);

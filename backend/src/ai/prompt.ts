@@ -76,7 +76,16 @@ Respond with ONLY a raw JSON object (no markdown code fences, no explanation bef
     }
   ],
   "contextAlignmentScore": <optional integer 0-100 when deal_context is present>,
-  "contextDiscrepancies": []
+  "contextDiscrepancies": [
+    {
+      "dimension": "SCOPE_AND_DELIVERABLES" | "TIMELINE_AND_DEADLINES" | "PAYMENT_AND_MILESTONES" | "REVISIONS_AND_ACCEPTANCE" | "EXCLUSIONS_AND_IP",
+      "status": "MISMATCH" | "OMITTED_IN_CONTRACT" | "MATCH",
+      "agreedTerm": "<what was agreed in deal_context>",
+      "contractTerm": "<what is written in contract_clauses or omitted>",
+      "riskImpact": "<concise explanation of commercial impact>",
+      "suggestedAmendment": "<ready-to-use corrective wording>"
+    }
+  ]
 }`;
 
 /**
