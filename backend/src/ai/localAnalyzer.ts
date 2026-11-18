@@ -228,8 +228,16 @@ export function evaluateDealContextDiscrepancies(
   const lower = fullText.toLowerCase();
   const discrepancies: ContextDiscrepancy[] = [];
 
+  const rawNotes = dealContext.rawNotes?.trim() || '';
+  const rawSegments = rawNotes
+    .split(/[.;\n]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const pickNoteSegment = (pattern: RegExp) =>
+    rawSegments.filter((s) => pattern.test(s)).join('; ');
+
   // 1. SCOPE_AND_DELIVERABLES
-  const agreedScope = dealContext.agreedScope?.trim() || dealContext.rawNotes?.trim() || '';
+  const agreedScope = dealContext.agreedScope?.trim() || rawNotes;
   if (agreedScope) {
     const scopeExcerpt = findRelevantClauseExcerpt(
       clauses,
@@ -277,7 +285,9 @@ export function evaluateDealContextDiscrepancies(
   }
 
   // 2. TIMELINE_AND_DEADLINES
-  const agreedTimeline = dealContext.agreedTimeline?.trim() || '';
+  const agreedTimeline =
+    dealContext.agreedTimeline?.trim() ||
+    pickNoteSegment(/week|day|deadline|launch|delivery|sla|тижд|дн|дедлайн|строк|термін/i);
   if (agreedTimeline) {
     const timelineExcerpt = findRelevantClauseExcerpt(
       clauses,
@@ -324,7 +334,9 @@ export function evaluateDealContextDiscrepancies(
   }
 
   // 3. PAYMENT_AND_MILESTONES
-  const agreedPayment = dealContext.agreedPayment?.trim() || '';
+  const agreedPayment =
+    dealContext.agreedPayment?.trim() ||
+    pickNoteSegment(/\$|usd|eur|uah|грн|%|upfront|deposit|net\s*\d+|pay|оплат|аванс|передоплат|бюджет/i);
   if (agreedPayment) {
     const payExcerpt = findRelevantClauseExcerpt(
       clauses,
@@ -397,7 +409,9 @@ export function evaluateDealContextDiscrepancies(
   }
 
   // 5. EXCLUSIONS_AND_IP
-  const agreedExclusions = dealContext.agreedExclusions?.trim() || '';
+  const agreedExclusions =
+    dealContext.agreedExclusions?.trim() ||
+    pickNoteSegment(/exclud|out of scope|library|libraries|starter|devops|ip|поза скоуп|виключ|бібліотек|власн|права/i);
   if (agreedExclusions) {
     const ipOrExclExcerpt = findRelevantClauseExcerpt(
       clauses,

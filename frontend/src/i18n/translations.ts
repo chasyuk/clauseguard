@@ -122,20 +122,14 @@ export const translations = {
     dealContext: {
       heading: 'Project & Deal Context (Check SOW against what was agreed)',
       subheading:
-        'Optional — fill in what you actually agreed on calls/Slack. ClauseGuard reconciles the client SOW against these expectations to catch silent contradictions.',
+        'Optional — paste your call summary, Slack thread, or agreed terms in plain text. ClauseGuard reconciles the client SOW against it.',
       toggleShow: 'Add / edit agreed project context',
-      toggleHide: 'Hide context fields',
+      toggleHide: 'Hide context box',
       presetEnBtn: 'Fill typical FOP SaaS agreement',
       presetUkBtn: 'Заповнити типові умови ФОП',
-      clearBtn: 'Clear context',
-      scopeLabel: 'Agreed scope & deliverables',
-      scopePlaceholder: 'e.g. React admin console + Node API per approved Sprint 1-3 SOW',
-      timelineLabel: 'Agreed timeline & deadlines',
-      timelinePlaceholder: 'e.g. 6 weeks delivery; 5 business days client review; delays shift deadline',
-      paymentLabel: 'Agreed price & payment terms',
-      paymentPlaceholder: 'e.g. $8,500 USD (40% upfront deposit, Net 14 calendar days)',
-      exclusionsLabel: 'Agreed exclusions & IP boundaries',
-      exclusionsPlaceholder: 'e.g. Pre-existing libraries stay ours; iOS app & DevOps excluded',
+      clearBtn: 'Clear',
+      notesPlaceholder:
+        'e.g. Scope: React admin portal + Node API. Timeline: 6 weeks, 5 business day review SLA. Payment: $8,500 USD (40% upfront, Net 14 days). Exclusions: Starter libraries stay ours; no iOS app or DevOps.',
       sampleContextActive: 'Sample audit automatically includes a realistic agreed Deal Context to demonstrate SOW vs. Context reconciliation.',
     },
     discrepancyMatrix: {
@@ -437,20 +431,14 @@ export const translations = {
     dealContext: {
       heading: 'Контекст проєкту та домовленостей (звірка з текстом SOW)',
       subheading:
-        'Необов’язково — опишіть, про що ви реально домовилися на дзвінку чи в месенджері. ClauseGuard зіставить текст SOW із цим контекстом.',
+        'Необов’язково — вставте нотатки з дзвінка чи переписки одним текстом. ClauseGuard зіставить текст SOW із вашими домовленостями.',
       toggleShow: 'Додати / змінити контекст проєкту',
-      toggleHide: 'Згорнути поля контексту',
+      toggleHide: 'Згорнути поле контексту',
       presetEnBtn: 'Підставити типовий SaaS (EN)',
       presetUkBtn: 'Підставити типові умови ФОП (UA)',
-      clearBtn: 'Очистити контекст',
-      scopeLabel: 'Узгоджений скоуп та результати',
-      scopePlaceholder: 'Напр.: Адмін-панель React + API Node.js згідно з погодженим беклогом',
-      timelineLabel: 'Узгоджені дедлайни та графік',
-      timelinePlaceholder: 'Напр.: 45 днів; 5 роб. днів на перевірку замовником; затримки зсувають дедлайн',
-      paymentLabel: 'Узгоджена ціна та графік оплати',
-      paymentPlaceholder: 'Напр.: 40% аванс, фінал за 10 банківських днів незалежно від клієнтів',
-      exclusionsLabel: 'Узгоджені виключення та права ІВ',
-      exclusionsPlaceholder: 'Напр.: Власні бібліотеки залишаються у ФОП; мобільний додаток не входить',
+      clearBtn: 'Очистити',
+      notesPlaceholder:
+        'Напр.: Скоуп: адмінка React + API Node. Дедлайн: 45 днів, 5 роб. днів на приймання. Оплата: 40% аванс, фінал 10 днів. Виключення: власні бібліотеки залишаються у ФОП, мобільний додаток не входить.',
       sampleContextActive: 'Для тестових зразків автоматично підставляється реалістичний контекст угоди, щоб показати звірку SOW із домовленостями.',
     },
     discrepancyMatrix: {

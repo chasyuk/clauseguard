@@ -19,21 +19,9 @@ interface UploadZoneProps {
 const MAX_BYTES = 10 * 1024 * 1024;
 
 function cleanDealContext(ctx: DealContext): DealContext | undefined {
-  const cleaned: DealContext = {
-    agreedScope: ctx.agreedScope?.trim() || undefined,
-    agreedTimeline: ctx.agreedTimeline?.trim() || undefined,
-    agreedPayment: ctx.agreedPayment?.trim() || undefined,
-    agreedExclusions: ctx.agreedExclusions?.trim() || undefined,
-  };
-  if (
-    !cleaned.agreedScope &&
-    !cleaned.agreedTimeline &&
-    !cleaned.agreedPayment &&
-    !cleaned.agreedExclusions
-  ) {
-    return undefined;
-  }
-  return cleaned;
+  const notes = ctx.rawNotes?.trim();
+  if (!notes) return undefined;
+  return { rawNotes: notes };
 }
 
 export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
@@ -47,10 +35,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const [samples, setSamples] = useState<SampleMetadata[]>([]);
   const [showContextFields, setShowContextFields] = useState(true);
   const [dealContext, setDealContext] = useState<DealContext>({
-    agreedScope: '',
-    agreedTimeline: '',
-    agreedPayment: '',
-    agreedExclusions: '',
+    rawNotes: '',
   });
 
   useEffect(() => {
@@ -127,17 +112,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const loadPresetContext = (mode: 'en' | 'uk') => {
     if (mode === 'en') {
       setDealContext({
-        agreedScope: 'Custom React/Node SaaS portal MVP (Auth, Billing, Admin Console) per approved sprint SOW',
-        agreedTimeline: '6-week delivery; 5 business days client review SLA; delays in client assets extend deadline',
-        agreedPayment: '$8,500 USD total (40% upfront deposit, Net 14 calendar days unconditionally)',
-        agreedExclusions: 'Contractor pre-existing utility libraries, UI templates, and post-launch DevOps support excluded',
+        rawNotes:
+          'Scope: Custom React/Node SaaS portal MVP (Auth, Billing, Admin Console) per approved sprint SOW. Timeline: 6-week delivery; 5 business days client review SLA; delays in client assets extend deadline. Payment: $8,500 USD total (40% upfront deposit, Net 14 calendar days unconditionally). Exclusions: Contractor pre-existing utility libraries, UI templates, and post-launch DevOps support excluded.',
       });
     } else {
       setDealContext({
-        agreedScope: 'Розробка веб-кабінету та REST API інтеграції за узгодженим ТЗ (2 раунди правок)',
-        agreedTimeline: '45 календарних днів від дати передоплати; 5 роб. днів на підписання Акта',
-        agreedPayment: 'Передоплата 40%, фінальна оплата 10 банківських днів незалежно від кінцевих клієнтів',
-        agreedExclusions: 'Власні бібліотеки Виконавця залишаються за ФОП; IP переходить виключно після повної оплати',
+        rawNotes:
+          'Скоуп: Розробка веб-кабінету та REST API інтеграції за узгодженим ТЗ (2 раунди правок). Дедлайн: 45 календарних днів від передоплати; 5 роб. днів на підписання Акта. Оплата: Передоплата 40%, фінал 10 банківських днів незалежно від кінцевих клієнтів. Виключення: Власні бібліотеки Виконавця залишаються за ФОП; IP переходить виключно після повної оплати.',
       });
     }
   };
@@ -192,14 +173,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setDealContext({
-                      agreedScope: '',
-                      agreedTimeline: '',
-                      agreedPayment: '',
-                      agreedExclusions: '',
-                    })
-                  }
+                  onClick={() => setDealContext({ rawNotes: '' })}
                   className="rounded-md border border-surface-border px-2.5 py-1 font-mono text-xs text-ink-muted hover:text-white"
                 >
                   {t.dealContext.clearBtn}
@@ -207,66 +181,15 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div>
-                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                  {t.dealContext.scopeLabel}
-                </label>
-                <input
-                  type="text"
-                  value={dealContext.agreedScope ?? ''}
-                  onChange={(e) =>
-                    setDealContext((prev) => ({ ...prev, agreedScope: e.target.value }))
-                  }
-                  placeholder={t.dealContext.scopePlaceholder}
-                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                  {t.dealContext.timelineLabel}
-                </label>
-                <input
-                  type="text"
-                  value={dealContext.agreedTimeline ?? ''}
-                  onChange={(e) =>
-                    setDealContext((prev) => ({ ...prev, agreedTimeline: e.target.value }))
-                  }
-                  placeholder={t.dealContext.timelinePlaceholder}
-                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                  {t.dealContext.paymentLabel}
-                </label>
-                <input
-                  type="text"
-                  value={dealContext.agreedPayment ?? ''}
-                  onChange={(e) =>
-                    setDealContext((prev) => ({ ...prev, agreedPayment: e.target.value }))
-                  }
-                  placeholder={t.dealContext.paymentPlaceholder}
-                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                  {t.dealContext.exclusionsLabel}
-                </label>
-                <input
-                  type="text"
-                  value={dealContext.agreedExclusions ?? ''}
-                  onChange={(e) =>
-                    setDealContext((prev) => ({ ...prev, agreedExclusions: e.target.value }))
-                  }
-                  placeholder={t.dealContext.exclusionsPlaceholder}
-                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
-                />
-              </div>
+            <div>
+              <textarea
+                rows={3}
+                aria-label={t.dealContext.heading}
+                value={dealContext.rawNotes ?? ''}
+                onChange={(e) => setDealContext({ rawNotes: e.target.value })}
+                placeholder={t.dealContext.notesPlaceholder}
+                className="w-full rounded-md border border-surface-border bg-surface-card p-3.5 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
+              />
             </div>
 
             {!cleanDealContext(dealContext) && (
