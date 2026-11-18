@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
@@ -164,20 +165,139 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
 
   return (
     <div className="space-y-8">
-      {/* Builder Configuration (flat, open layout without nested outer box) */}
-      <section className="space-y-6">
+      {/* Builder Configuration (Prompt + Primary Assemble CTA FIRST for instant mobile & desktop access) */}
+      <section id="builder-assemble-area" className="space-y-6">
         <div className="border-b border-surface-border pb-3">
           <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
             {t.builder.sectionTitle}
           </h2>
         </div>
 
-        {/* 1. Template Grid */}
+        {/* 1. Plain Text Input + Example Scenarios */}
+        <div>
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <label
+              htmlFor="builder-plain-text"
+              className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-muted"
+            >
+              {t.builder.plainTextLabel}
+            </label>
+            {catalog && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-mono text-[11px] text-ink-muted">
+                  {t.builder.tryScenario}
+                </span>
+                {catalog.scenarios.map((sc) => (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={() => handleLoadScenario(sc.id)}
+                    className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1.5 font-mono text-xs font-medium text-ink-primary transition-colors hover:border-brand hover:text-brand-text"
+                  >
+                    {isUk ? sc.labelUk : sc.labelEn}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <textarea
+            id="builder-plain-text"
+            rows={4}
+            value={plainText}
+            onChange={(e) => setPlainText(e.target.value)}
+            placeholder={t.builder.plainTextPlaceholder}
+            className="mt-2.5 w-full rounded-md border border-surface-strong bg-surface-card p-3.5 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none sm:p-4 sm:text-base"
+          />
+        </div>
+
+        {/* Language, Posture & Prominent Primary Assemble Button */}
+        <div className="flex flex-col justify-between gap-5 border-b border-surface-border pb-6 lg:flex-row lg:items-end">
+          <div className="flex w-full flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-6 lg:w-auto">
+            <div className="w-full sm:w-auto">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                {t.builder.languageLabel}
+              </p>
+              <div className="mt-1.5 flex w-full overflow-hidden rounded-md border border-surface-border bg-surface-card sm:inline-flex sm:w-auto">
+                {(['en', 'uk', 'bilingual'] as BuilderLanguage[]).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setContractLanguage(opt)}
+                    className={`flex-1 border-r border-surface-border px-3 py-2.5 font-mono text-xs font-medium last:border-r-0 sm:flex-initial sm:px-3.5 sm:py-2 ${
+                      contractLanguage === opt
+                        ? 'bg-surface-subtle text-white'
+                        : 'text-ink-muted hover:text-ink-primary'
+                    }`}
+                  >
+                    {t.builder.langOptions[opt]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full sm:w-auto">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                {t.builder.postureLabel}
+              </p>
+              <div className="mt-1.5 flex w-full overflow-hidden rounded-md border border-surface-border bg-surface-card sm:inline-flex sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPosture('CONTRACTOR_PROTECTIVE');
+                    setSelectedClauseIds({});
+                  }}
+                  className={`flex-1 border-r border-surface-border px-3 py-2.5 font-mono text-xs font-medium sm:flex-initial sm:px-3.5 sm:py-2 ${
+                    posture === 'CONTRACTOR_PROTECTIVE'
+                      ? 'bg-brand text-white'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  {t.builder.postureProtective}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPosture('BALANCED');
+                    setSelectedClauseIds({});
+                  }}
+                  className={`flex-1 px-3 py-2.5 font-mono text-xs font-medium sm:flex-initial sm:px-3.5 sm:py-2 ${
+                    posture === 'BALANCED'
+                      ? 'bg-surface-subtle text-white'
+                      : 'text-ink-muted hover:text-ink-primary'
+                  }`}
+                >
+                  {t.builder.postureBalanced}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={isLoading || plainText.trim().length < 15}
+            onClick={() =>
+              void runAssembly({
+                overrideParams: undefined,
+              })
+            }
+            className="inline-flex w-full items-center justify-center gap-2.5 rounded-md border border-white bg-white px-7 py-4 text-base font-bold text-[#0A0A0A] transition-all duration-150 hover:bg-zinc-200 disabled:opacity-50 lg:w-auto lg:px-8"
+          >
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <ArrowRight className="h-5 w-5" aria-hidden="true" />
+            )}
+            <span>{isLoading ? t.builder.assemblingBtn : t.builder.assembleBtn}</span>
+          </button>
+        </div>
+
+        {/* 2. Template Selector (Horizontal Swipe on Mobile, 4-col Grid on Desktop) */}
         <div>
           <p className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-muted">
             {t.builder.chooseTemplate}
           </p>
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4">
             {catalog?.templates.map((tpl) => {
               const selected = tpl.templateId === selectedTemplateId;
               return (
@@ -188,7 +308,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     setSelectedTemplateId(tpl.templateId);
                     setSelectedClauseIds({});
                   }}
-                  className={`flex flex-col justify-between rounded-md border p-4 text-left transition-all duration-150 hover:-translate-y-0.5 ${
+                  className={`flex min-w-[260px] shrink-0 snap-start flex-col justify-between rounded-md border p-4 text-left transition-all duration-150 hover:-translate-y-0.5 md:min-w-0 md:shrink ${
                     selected
                       ? 'border-brand bg-brand-subtle/40'
                       : 'border-surface-border bg-surface-card hover:border-surface-strong'
@@ -212,121 +332,6 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
               );
             })}
           </div>
-        </div>
-
-        {/* 2. Plain Text Input + Example Scenarios */}
-        <div>
-          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-            <label
-              htmlFor="builder-plain-text"
-              className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-muted"
-            >
-              {t.builder.plainTextLabel}
-            </label>
-            {catalog && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="font-mono text-[11px] text-ink-muted">
-                  {t.builder.tryScenario}
-                </span>
-                {catalog.scenarios.map((sc) => (
-                  <button
-                    key={sc.id}
-                    type="button"
-                    onClick={() => handleLoadScenario(sc.id)}
-                    className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-xs font-medium text-ink-primary transition-colors hover:border-brand hover:text-brand-text"
-                  >
-                    {isUk ? sc.labelUk : sc.labelEn}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <textarea
-            id="builder-plain-text"
-            rows={4}
-            value={plainText}
-            onChange={(e) => setPlainText(e.target.value)}
-            placeholder={t.builder.plainTextPlaceholder}
-            className="mt-2.5 w-full rounded-md border border-surface-border bg-surface-card p-4 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none sm:text-base"
-          />
-        </div>
-
-        {/* Language, Posture & Primary Assemble Button */}
-        <div className="flex flex-col justify-between gap-4 border-b border-surface-border pb-6 lg:flex-row lg:items-end">
-          <div className="flex flex-wrap gap-6">
-            <div>
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                {t.builder.languageLabel}
-              </p>
-              <div className="mt-1.5 inline-flex overflow-hidden rounded-md border border-surface-border bg-surface-card">
-                {(['en', 'uk', 'bilingual'] as BuilderLanguage[]).map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setContractLanguage(opt)}
-                    className={`border-r border-surface-border px-3.5 py-2 font-mono text-xs font-medium last:border-r-0 ${
-                      contractLanguage === opt
-                        ? 'bg-surface-subtle text-white'
-                        : 'text-ink-muted hover:text-ink-primary'
-                    }`}
-                  >
-                    {t.builder.langOptions[opt]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                {t.builder.postureLabel}
-              </p>
-              <div className="mt-1.5 inline-flex overflow-hidden rounded-md border border-surface-border bg-surface-card">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPosture('CONTRACTOR_PROTECTIVE');
-                    setSelectedClauseIds({});
-                  }}
-                  className={`border-r border-surface-border px-3.5 py-2 font-mono text-xs font-medium ${
-                    posture === 'CONTRACTOR_PROTECTIVE'
-                      ? 'bg-brand text-white'
-                      : 'text-ink-muted hover:text-ink-primary'
-                  }`}
-                >
-                  {t.builder.postureProtective}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPosture('BALANCED');
-                    setSelectedClauseIds({});
-                  }}
-                  className={`px-3.5 py-2 font-mono text-xs font-medium ${
-                    posture === 'BALANCED'
-                      ? 'bg-surface-subtle text-white'
-                      : 'text-ink-muted hover:text-ink-primary'
-                  }`}
-                >
-                  {t.builder.postureBalanced}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            disabled={isLoading || plainText.trim().length < 15}
-            onClick={() =>
-              void runAssembly({
-                overrideParams: undefined,
-              })
-            }
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-2.5 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 disabled:opacity-50"
-          >
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            <span>{isLoading ? t.builder.assemblingBtn : t.builder.assembleBtn}</span>
-          </button>
         </div>
 
         {error && (

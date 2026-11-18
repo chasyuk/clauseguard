@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowLeft, Loader2 } from 'lucide-react';
 import { fetchAuditById, fetchMyAudits } from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ClauseLibraryView } from './components/ClauseLibraryView';
@@ -102,7 +102,7 @@ const MainShell: React.FC = () => {
     }
   };
 
-  const jumpToMode = (mode: WorkspaceMode) => {
+  const jumpToMode = (mode: WorkspaceMode, focusBuilderPrompt = false) => {
     setActiveRecord(null);
     setAuditLoadError(false);
     setWorkspaceMode(mode);
@@ -110,8 +110,19 @@ const MainShell: React.FC = () => {
       window.history.pushState({}, '', '/');
     }
     window.setTimeout(() => {
-      workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 30);
+      if (focusBuilderPrompt && mode === 'builder') {
+        const target = document.getElementById('builder-assemble-area');
+        const textarea = document.getElementById('builder-plain-text') as HTMLTextAreaElement | null;
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        textarea?.focus({ preventScroll: true });
+      } else {
+        workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 40);
   };
 
   const isUk = lang === 'uk';
@@ -125,7 +136,7 @@ const MainShell: React.FC = () => {
         onOpenDonate={() => setDonateOpen(true)}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-12 pt-8 sm:px-6 sm:pt-12">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-12 pt-6 sm:px-6 sm:pt-12">
         {loadingAudit ? (
           <div className="flex items-center justify-center rounded-lg border border-surface-border bg-surface-card p-12 text-base font-medium text-white">
             <Loader2 className="mr-3 h-5 w-5 animate-spin text-brand-text" aria-hidden="true" />
@@ -189,18 +200,21 @@ const MainShell: React.FC = () => {
                   : 'Describe your deal in plain text to assemble a contract from 16 vetted FOP clauses, or reconcile a client SOW against what you actually agreed.'}
               </p>
 
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+              <div className="mt-7 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  onClick={() => jumpToMode('builder')}
-                  className="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+                  onClick={() => jumpToMode('builder', true)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-7 py-3.5 text-base font-bold text-[#0A0A0A] transition-colors hover:bg-zinc-200 sm:w-auto"
                 >
-                  {isUk ? 'Скласти договір з модулів' : 'Build contract from vetted clauses'}
+                  <span>
+                    {isUk ? 'Створити і зібрати договір' : 'Create & assemble a contract'}
+                  </span>
+                  <ArrowDown className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={() => jumpToMode('auditor')}
-                  className="inline-flex items-center justify-center rounded-md border border-surface-border bg-surface-card px-6 py-3 text-sm font-medium text-white transition-colors hover:border-surface-strong hover:bg-surface-subtle"
+                  className="inline-flex w-full items-center justify-center rounded-md border border-surface-border bg-surface-card px-6 py-3.5 text-sm font-medium text-white transition-colors hover:border-surface-strong hover:bg-surface-subtle sm:w-auto"
                 >
                   {isUk ? 'Звірити SOW із контекстом' : 'Audit SOW against project context'}
                 </button>
@@ -219,14 +233,17 @@ const MainShell: React.FC = () => {
               className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
             >
               {/* macOS Window Chrome + Integrated Mode Switcher */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border bg-surface-subtle px-4 py-2.5">
-                <div className="flex items-center gap-2" aria-hidden="true">
+              <div className="flex flex-col gap-2.5 border-b border-surface-border bg-surface-subtle px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                <div className="hidden items-center gap-2 sm:flex" aria-hidden="true">
                   <span className="h-3 w-3 rounded-sm bg-[#EF4444]/85" />
                   <span className="h-3 w-3 rounded-sm bg-[#F59E0B]/85" />
                   <span className="h-3 w-3 rounded-sm bg-[#22C55E]/85" />
                 </div>
 
-                <nav aria-label="Workspace modes" className="flex flex-wrap items-center gap-1">
+                <nav
+                  aria-label="Workspace modes"
+                  className="grid w-full grid-cols-3 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center"
+                >
                   {(
                     [
                       ['builder', t.modes.builder],
@@ -240,7 +257,7 @@ const MainShell: React.FC = () => {
                         key={modeId}
                         type="button"
                         onClick={() => setWorkspaceMode(modeId)}
-                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        className={`rounded-md px-2 py-2 text-center text-[11px] font-semibold leading-tight transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
                           active
                             ? 'bg-white text-[#0A0A0A]'
                             : 'text-ink-secondary hover:bg-surface-card hover:text-white'
@@ -258,7 +275,7 @@ const MainShell: React.FC = () => {
               </div>
 
               {/* Active App Content */}
-              <div className="bg-surface-bg p-5 sm:p-7">
+              <div className="bg-surface-bg p-3.5 sm:p-7">
                 {workspaceMode === 'builder' ? (
                   <ContractBuilderView initialTemplateId={builderTemplateOverride} />
                 ) : workspaceMode === 'library' ? (
