@@ -234,8 +234,8 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
 
   return (
     <div className="relative flex flex-col text-ink-primary">
-      {/* Top Triple-Color Accent Bar */}
-      <div className="-mx-5 -mt-5 mb-5 h-1.5 bg-gradient-to-r from-signal via-blue-600 to-forest sm:-mx-6 sm:-mt-6" />
+      {/* Top Accent Bar (Brand Forest Green) */}
+      <div className="-mx-5 -mt-5 mb-5 h-1.5 bg-forest sm:-mx-6 sm:-mt-6" />
 
       {/* Header */}
       <div className="flex flex-col justify-between gap-3 border-b border-paper-border pb-4 sm:flex-row sm:items-center">
