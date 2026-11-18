@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, Download, Loader2, Upload } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  FileText,
+  Loader2,
+  Upload,
+  X,
+} from 'lucide-react';
 import {
   analyzeAudit,
   ApiClientError,
@@ -18,22 +27,38 @@ interface UploadZoneProps {
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
-function cleanDealContext(ctx: DealContext): DealContext | undefined {
+type UserRole = 'contractor' | 'client';
+type DocType = 'auto' | 'MSA' | 'NDA' | 'SOW';
+
+function buildDealContext(
+  ctx: DealContext,
+  role: UserRole,
+  docType: DocType,
+): DealContext | undefined {
   const notes = ctx.rawNotes?.trim();
-  if (!notes) return undefined;
-  return { rawNotes: notes };
+  if (!notes && role === 'contractor' && docType === 'auto') return undefined;
+  const metaParts: string[] = [];
+  metaParts.push(`Reviewing party: ${role === 'contractor' ? 'Contractor / FOP' : 'Client'}`);
+  if (docType !== 'auto') metaParts.push(`Document type: ${docType}`);
+  const combined = notes ? `${metaParts.join(' | ')}\n${notes}` : metaParts.join(' | ');
+  return { rawNotes: combined };
 }
 
 export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const { t, lang } = useLanguage();
   const { token } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUk = lang === 'uk';
 
+  const [sourceTab, setSourceTab] = useState<'upload' | 'samples'>('upload');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('contractor');
+  const [docType, setDocType] = useState<DocType>('auto');
   const [isDragging, setIsDragging] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [samples, setSamples] = useState<SampleMetadata[]>([]);
-  const [showContextFields, setShowContextFields] = useState(true);
+  const [showContextFields, setShowContextFields] = useState(false);
   const [dealContext, setDealContext] = useState<DealContext>({
     rawNotes: '',
   });
@@ -74,7 +99,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
     }
   };
 
-  const handleFile = async (file: File) => {
+  const validateAndStageFile = (file: File) => {
     setErrorMessage(null);
     const lowerName = file.name.toLowerCase();
     if (!lowerName.endsWith('.pdf') && !lowerName.endsWith('.docx')) {
@@ -85,21 +110,28 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
       setErrorMessage(t.upload.errors.FILE_TOO_LARGE);
       return;
     }
+    setSelectedFile(file);
+  };
 
-    const activeCtx = cleanDealContext(dealContext);
+  const handleAuditSelectedFile = async () => {
+    if (!selectedFile) {
+      fileInputRef.current?.click();
+      return;
+    }
+    setErrorMessage(null);
+    const activeCtx = buildDealContext(dealContext, userRole, docType);
     try {
-      await runExtractAndAnalyze(extractContractFile(file, token, activeCtx), activeCtx);
+      await runExtractAndAnalyze(extractContractFile(selectedFile, token, activeCtx), activeCtx);
     } catch (err) {
       setErrorMessage(mapErrorMessage(err));
     } finally {
       setLoadingStage(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleSampleTest = async (filename: string) => {
     setErrorMessage(null);
-    const activeCtx = cleanDealContext(dealContext);
+    const activeCtx = buildDealContext(dealContext, userRole, docType);
     try {
       await runExtractAndAnalyze(extractSampleContract(filename, token, activeCtx), activeCtx);
     } catch (err) {
@@ -127,214 +159,323 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) void handleFile(file);
+    if (file) validateAndStageFile(file);
   };
 
   return (
-    <div className="space-y-8">
-      {/* Deal Context Input Panel: Flat Open Layout */}
-      <section className="space-y-4 border-b border-surface-border pb-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-lg font-bold text-white">
-            {t.dealContext.heading}
-          </h2>
-          <button
-            type="button"
-            onClick={() => setShowContextFields((p) => !p)}
-            className="inline-flex items-center gap-1 rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-xs font-medium text-ink-primary hover:border-surface-strong"
-          >
-            <span>{showContextFields ? t.dealContext.toggleHide : t.dealContext.toggleShow}</span>
-            {showContextFields ? (
-              <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-          </button>
+    <div className="space-y-5 text-ink-primary">
+      {/* Step 1 Header + Source Switch */}
+      <div>
+        <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+          {isUk ? '1 · ДОДАЙТЕ ДОГОВІР' : '1 · ADD YOUR CONTRACT'}
         </div>
 
+        <div className="mt-2.5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSourceTab('upload')}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              sourceTab === 'upload'
+                ? 'bg-forest text-white'
+                : 'border border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
+            }`}
+          >
+            {isUk ? 'Завантажити файл' : 'Upload file'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceTab('samples')}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+              sourceTab === 'samples'
+                ? 'bg-forest text-white'
+                : 'border border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
+            }`}
+          >
+            {isUk ? 'Тестові зразки' : 'Sample contracts'}
+          </button>
+        </div>
+      </div>
+
+      {sourceTab === 'upload' ? (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={t.upload.dropzoneTitle}
+          onClick={() => !loadingStage && fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !loadingStage) {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={onDrop}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-5 py-7 text-center transition-colors ${
+            isDragging
+              ? 'border-signal bg-signal-soft'
+              : 'border-paper-strong bg-paper/70 hover:border-forest hover:bg-paper-soft'
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) validateAndStageFile(file);
+            }}
+          />
+
+          {loadingStage ? (
+            <div className="flex items-center gap-2.5 text-sm font-semibold text-signal">
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              <span>{loadingStage}</span>
+            </div>
+          ) : selectedFile ? (
+            <div className="flex w-full items-center justify-between gap-3 rounded-md border border-paper-border bg-white px-3.5 py-2.5 text-left">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <FileText className="h-5 w-5 shrink-0 text-signal" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink-primary">
+                    {selectedFile.name}
+                  </p>
+                  <p className="font-mono text-[11px] text-ink-muted">
+                    {(selectedFile.size / 1024).toFixed(1)} KB ·{' '}
+                    {isUk ? 'Готово до перевірки' : 'Ready to audit'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                aria-label="Remove file"
+                className="rounded-md p-1 text-ink-muted hover:bg-paper-soft hover:text-ink-primary"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <Upload className="h-5 w-5 text-ink-secondary" aria-hidden="true" />
+              <p className="mt-2.5 text-sm font-semibold text-ink-primary">
+                {isUk ? 'Перетягніть договір сюди' : 'Drop a contract here'}
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">PDF {isUk ? 'або' : 'or'} DOCX</p>
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                <span className="rounded border border-paper-strong bg-paper-soft px-2.5 py-1 font-medium text-ink-primary">
+                  {isUk ? 'Обрати файл…' : 'Browse...'}
+                </span>
+                <span className="text-ink-muted">
+                  {isUk ? 'Файл не обрано.' : 'No file selected.'}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="divide-y divide-paper-border rounded-lg border border-paper-border bg-paper/60">
+          {samples.map((sample) => {
+            const isScannedTest = sample.expectedOutcome === 'scanned_error';
+            return (
+              <div
+                key={sample.filename}
+                className="flex flex-col justify-between gap-2.5 px-3.5 py-2.5 sm:flex-row sm:items-center"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-xs font-semibold text-ink-primary">
+                      {isUk ? sample.labelUk : sample.labelEn}
+                    </span>
+                    <span className="rounded border border-paper-border bg-white px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-muted">
+                      {sample.filename.endsWith('.pdf') ? 'PDF' : 'DOCX'}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-ink-secondary">
+                    {isUk ? sample.descriptionUk : sample.descriptionEn}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={Boolean(loadingStage)}
+                    onClick={() => void handleSampleTest(sample.filename)}
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                      isScannedTest
+                        ? 'border border-risk-medBorder bg-risk-medBg text-risk-medText'
+                        : 'bg-forest text-white hover:bg-forest-soft'
+                    }`}
+                  >
+                    {isScannedTest ? t.upload.runTestError : t.upload.runTest}
+                  </button>
+                  <a
+                    href={getSampleDownloadUrl(sample.filename)}
+                    download={sample.filename}
+                    title={t.upload.downloadSample}
+                    aria-label={`${t.upload.downloadSample} ${sample.filename}`}
+                    className="inline-flex items-center rounded-full border border-paper-border bg-white p-1.5 text-ink-secondary hover:border-paper-strong hover:text-ink-primary"
+                  >
+                    <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {errorMessage && (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-risk-highBorder bg-risk-highBg px-3.5 py-2.5 text-xs leading-relaxed text-risk-highText"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Step 2: Role */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="w-24 shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+          {isUk ? '2 · Я —' : '2 · I AM THE'}
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(['contractor', 'client'] as const).map((role) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => setUserRole(role)}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-colors ${
+                userRole === role
+                  ? 'bg-forest text-white'
+                  : 'border border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
+              }`}
+            >
+              {role === 'contractor'
+                ? isUk
+                  ? 'Виконавець / ФОП'
+                  : 'Contractor'
+                : isUk
+                  ? 'Замовник'
+                  : 'Client'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 3: Contract Type */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="w-24 shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+          {isUk ? '3 · ТИП' : '3 · TYPE'}
+        </span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              ['auto', isUk ? 'Автовизначення' : 'Auto-detect'],
+              ['MSA', 'MSA'],
+              ['NDA', 'NDA'],
+              ['SOW', 'SOW'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setDocType(id)}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-colors ${
+                docType === id
+                  ? 'bg-forest text-white'
+                  : 'border border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Optional Project & Deal Context Accordion */}
+      <div className="border-t border-paper-border pt-3">
+        <button
+          type="button"
+          onClick={() => setShowContextFields((p) => !p)}
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-secondary hover:text-signal"
+        >
+          <span>{showContextFields ? t.dealContext.toggleHide : t.dealContext.toggleShow}</span>
+          {showContextFields ? (
+            <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+        </button>
+
         {showContextFields && (
-          <div className="space-y-4">
-            <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-              <p className="text-sm leading-relaxed text-ink-secondary">{t.dealContext.subheading}</p>
-              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          <div className="mt-3 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-ink-secondary">{t.dealContext.subheading}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => loadPresetContext('en')}
-                  className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-xs font-medium text-ink-primary hover:border-brand hover:text-brand-text"
+                  className="rounded border border-paper-border bg-paper px-2 py-0.5 font-mono text-[10px] font-medium text-ink-primary hover:border-signal hover:text-signal"
                 >
                   {t.dealContext.presetEnBtn}
                 </button>
                 <button
                   type="button"
                   onClick={() => loadPresetContext('uk')}
-                  className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-xs font-medium text-ink-primary hover:border-brand hover:text-brand-text"
+                  className="rounded border border-paper-border bg-paper px-2 py-0.5 font-mono text-[10px] font-medium text-ink-primary hover:border-signal hover:text-signal"
                 >
                   {t.dealContext.presetUkBtn}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDealContext({ rawNotes: '' })}
-                  className="rounded-md border border-surface-border px-2.5 py-1 font-mono text-xs text-ink-muted hover:text-white"
+                  className="rounded border border-paper-border px-2 py-0.5 font-mono text-[10px] text-ink-muted hover:text-ink-primary"
                 >
                   {t.dealContext.clearBtn}
                 </button>
               </div>
             </div>
-
-            <div>
-              <textarea
-                rows={3}
-                aria-label={t.dealContext.heading}
-                value={dealContext.rawNotes ?? ''}
-                onChange={(e) => setDealContext({ rawNotes: e.target.value })}
-                placeholder={t.dealContext.notesPlaceholder}
-                className="w-full rounded-md border border-surface-border bg-surface-card p-3.5 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
-              />
-            </div>
-
-            {!cleanDealContext(dealContext) && (
-              <p className="text-xs text-ink-muted">
-                {t.dealContext.sampleContextActive}
-              </p>
-            )}
+            <textarea
+              rows={3}
+              aria-label={t.dealContext.heading}
+              value={dealContext.rawNotes ?? ''}
+              onChange={(e) => setDealContext({ rawNotes: e.target.value })}
+              placeholder={t.dealContext.notesPlaceholder}
+              className="w-full rounded-lg border border-paper-border bg-paper/60 p-3 text-xs leading-relaxed text-ink-primary placeholder:text-ink-muted focus:border-signal focus:bg-white focus:outline-none"
+            />
           </div>
         )}
-      </section>
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left 6 cols: Primary Drag-and-Drop Box */}
-        <div className="flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-card lg:col-span-6">
-          <div className="border-b border-surface-border bg-surface-subtle px-4 py-2.5">
-            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
-              {t.upload.sectionTitle}
-            </h2>
-          </div>
-
-          <div className="flex flex-1 flex-col p-4">
-            <div
-              role="button"
-              tabIndex={0}
-              aria-label={t.upload.dropzoneTitle}
-              onClick={() => !loadingStage && fileInputRef.current?.click()}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !loadingStage) {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={onDrop}
-              className={`flex flex-1 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed px-6 py-10 text-center transition-colors ${
-                isDragging
-                  ? 'border-brand bg-brand-subtle/30'
-                  : 'border-surface-strong bg-surface-bg hover:border-ink-muted hover:bg-surface-subtle/50'
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void handleFile(file);
-                }}
-              />
-
-              {loadingStage ? (
-                <div className="flex items-center gap-2.5 text-sm font-medium text-brand-text">
-                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                  <span>{loadingStage}</span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-surface-strong bg-surface-subtle text-white">
-                    <Upload className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <p className="mt-4 text-sm font-semibold text-white">
-                    {t.upload.dropzoneTitle}
-                  </p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
-                    {t.upload.dropzoneHint}
-                  </p>
-                </>
-              )}
-            </div>
-
-            {errorMessage && (
-              <div
-                role="alert"
-                className="mt-4 flex items-start gap-2.5 rounded-md border border-risk-highBorder bg-risk-highBg px-3.5 py-3 text-xs leading-relaxed text-risk-highText"
-              >
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right 6 cols: Sample Contracts */}
-        <div className="flex flex-col overflow-hidden rounded-lg border border-surface-border bg-surface-card lg:col-span-6">
-          <div className="border-b border-surface-border bg-surface-subtle px-4 py-2.5">
-            <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
-              {t.upload.samplesHeading}
-            </h2>
-          </div>
-
-          <div className="flex-1 divide-y divide-surface-border">
-            {samples.map((sample) => {
-              const isScannedTest = sample.expectedOutcome === 'scanned_error';
-              return (
-                <div
-                  key={sample.filename}
-                  className="flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">
-                        {lang === 'uk' ? sample.labelUk : sample.labelEn}
-                      </span>
-                      <span className="rounded-sm border border-surface-border bg-surface-bg px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-muted">
-                        {sample.filename.endsWith('.pdf') ? 'PDF' : 'DOCX'}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-ink-secondary">
-                      {lang === 'uk' ? sample.descriptionUk : sample.descriptionEn}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={Boolean(loadingStage)}
-                      onClick={() => void handleSampleTest(sample.filename)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                        isScannedTest
-                          ? 'border border-risk-medBorder bg-risk-medBg text-risk-medText hover:bg-amber-950'
-                          : 'bg-white text-[#0A0A0A] hover:bg-zinc-200'
-                      }`}
-                    >
-                      {isScannedTest ? t.upload.runTestError : t.upload.runTest}
-                    </button>
-                    <a
-                      href={getSampleDownloadUrl(sample.filename)}
-                      download={sample.filename}
-                      title={t.upload.downloadSample}
-                      aria-label={`${t.upload.downloadSample} ${sample.filename}`}
-                      className="inline-flex items-center rounded-md border border-surface-border bg-surface-bg p-1.5 text-ink-secondary transition-colors hover:border-surface-strong hover:text-white"
-                    >
-                      <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Primary Signal Orange CTA */}
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <button
+          type="button"
+          disabled={Boolean(loadingStage)}
+          onClick={() => void handleAuditSelectedFile()}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-signal px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-signal-hover disabled:opacity-60"
+        >
+          {loadingStage ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <span>{isUk ? 'Аналізуємо…' : 'Auditing…'}</span>
+            </>
+          ) : (
+            <span>{isUk ? 'Перевірити договір' : 'Audit my contract'}</span>
+          )}
+        </button>
+        <span className="text-xs text-ink-muted">
+          {isUk ? 'Безкоштовно. Видаляється за 24 год.' : 'Free. Deleted after 24 hours.'}
+        </span>
       </div>
     </div>
   );

@@ -5,9 +5,10 @@
 @layer base {
   html {
     font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-    color: #fafafa;
-    background-color: #0a0a0a;
-    color-scheme: dark;
+    color: #162620;
+    background-color: #f5f4f0;
+    color-scheme: light;
+    scroll-behavior: smooth;
   }
 
   button:focus-visible,
@@ -15,7 +16,40 @@
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid #f26419;
     outline-offset: 2px;
   }
+}
+
+@keyframes cg-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-cg-marquee {
+  display: flex;
+  width: max-content;
+  animation: cg-marquee 28s linear infinite;
+}
+
+.animate-cg-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes cg-bar-grow {
+  0% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+.animate-cg-bar {
+  transform-origin: left center;
+  animation: cg-bar-grow 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

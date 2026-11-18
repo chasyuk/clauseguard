@@ -168,7 +168,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
       {/* Builder Configuration (Prompt + Primary Assemble CTA FIRST for instant mobile & desktop access) */}
       <section id="builder-assemble-area" className="space-y-6">
         <div className="border-b border-surface-border pb-3">
-          <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
+          <h2 className="font-display text-xl font-bold text-ink-primary sm:text-2xl">
             {t.builder.sectionTitle}
           </h2>
         </div>
@@ -207,7 +207,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
             value={plainText}
             onChange={(e) => setPlainText(e.target.value)}
             placeholder={t.builder.plainTextPlaceholder}
-            className="mt-2.5 w-full rounded-md border border-surface-strong bg-surface-card p-3.5 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none sm:p-4 sm:text-base"
+            className="mt-2.5 w-full rounded-md border border-surface-strong bg-surface-card p-3.5 text-sm leading-relaxed text-ink-primary placeholder:text-ink-muted focus:border-signal focus:outline-none sm:p-4 sm:text-base"
           />
         </div>
 
@@ -226,7 +226,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     onClick={() => setContractLanguage(opt)}
                     className={`flex-1 border-r border-surface-border px-3 py-2.5 font-mono text-xs font-medium last:border-r-0 sm:flex-initial sm:px-3.5 sm:py-2 ${
                       contractLanguage === opt
-                        ? 'bg-surface-subtle text-white'
+                        ? 'bg-forest text-white'
                         : 'text-ink-muted hover:text-ink-primary'
                     }`}
                   >
@@ -263,7 +263,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   }}
                   className={`flex-1 px-3 py-2.5 font-mono text-xs font-medium sm:flex-initial sm:px-3.5 sm:py-2 ${
                     posture === 'BALANCED'
-                      ? 'bg-surface-subtle text-white'
+                      ? 'bg-forest text-white'
                       : 'text-ink-muted hover:text-ink-primary'
                   }`}
                 >
@@ -281,7 +281,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 overrideParams: undefined,
               })
             }
-            className="inline-flex w-full items-center justify-center gap-2.5 rounded-md border border-white bg-white px-7 py-4 text-base font-bold text-[#0A0A0A] transition-all duration-150 hover:bg-zinc-200 disabled:opacity-50 lg:w-auto lg:px-8"
+            className="inline-flex w-full items-center justify-center gap-2.5 rounded-md rounded-full bg-signal px-7 py-3.5 text-base font-bold text-ink-primary transition-colors hover:bg-signal-hover disabled:opacity-50 lg:w-auto lg:px-8"
           >
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
@@ -318,7 +318,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     <span className="inline-block rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-text">
                       {tpl.templateId}
                     </span>
-                    <h3 className="mt-2.5 text-base font-semibold text-white">
+                    <h3 className="mt-2.5 text-base font-semibold text-ink-primary">
                       {isUk ? tpl.titleUk : tpl.titleEn}
                     </h3>
                     <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
@@ -365,7 +365,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                         className="rounded-md border border-risk-medBorder bg-surface-card p-3"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-white">
+                          <span className="text-xs font-semibold text-ink-primary">
                             {isUk ? w.titleUk : w.titleEn}
                           </span>
                           <span className="rounded-sm border border-brand/50 bg-brand-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
@@ -393,7 +393,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 type="button"
                 disabled={isLoading}
                 onClick={() => void runAssembly({ overrideParams: paramDraft })}
-                className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-surface-strong"
+                className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong"
               >
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{t.builder.applyParamsBtn}</span>
@@ -429,7 +429,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                         [field]: inputType === 'number' ? Number(e.target.value) : e.target.value,
                       }))
                     }
-                    className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-white focus:border-brand focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-ink-primary focus:border-signal focus:outline-none"
                   />
                 </div>
               ))}
@@ -443,7 +443,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   onChange={(e) =>
                     setParamDraft((prev) => ({ ...prev, exclusions: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-white focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-ink-primary focus:border-signal focus:outline-none"
                 />
               </div>
             </div>
@@ -461,7 +461,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     {t.builder.sourceEngine}: {assembled.modelId}
                   </span>
                 </div>
-                <h2 className="mt-1.5 font-display text-xl font-bold text-white sm:text-2xl">
+                <h2 className="mt-1.5 font-display text-xl font-bold text-ink-primary sm:text-2xl">
                   {t.builder.assembledTitle}: {assembled.templateTitle}
                 </h2>
               </div>
@@ -489,7 +489,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   type="button"
                   disabled={exportingType !== null}
                   onClick={() => void handleDownload('docx')}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-3.5 py-2 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-signal px-4 py-2 text-xs font-bold text-ink-primary transition-colors hover:bg-signal-hover disabled:opacity-60"
                 >
                   {exportingType === 'docx' ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -503,7 +503,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   type="button"
                   disabled={exportingType !== null}
                   onClick={() => void handleDownload('pdf')}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3.5 py-2 text-xs font-medium text-white transition-colors hover:border-surface-strong disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3.5 py-2 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong disabled:opacity-60"
                 >
                   {exportingType === 'pdf' ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -524,10 +524,10 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border bg-surface-subtle px-4 py-2.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-white">
+                      <span className="rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-primary">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
-                      <span className="text-xs font-semibold text-white">{section.title}</span>
+                      <span className="text-xs font-semibold text-ink-primary">{section.title}</span>
                       <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                         {section.selectedClauseId}
                       </span>
@@ -578,7 +578,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                       <button
                         type="button"
                         onClick={() => void copyWithFeedback(section.module, section.renderedText)}
-                        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-surface-strong"
+                        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong"
                       >
                         {copiedKey === section.module ? (
                           <>
@@ -603,7 +603,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
               <button
                 type="button"
                 onClick={() => setShowFullPreview((p) => !p)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs font-semibold text-ink-secondary hover:bg-surface-subtle hover:text-white"
+                className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs font-semibold text-ink-secondary hover:bg-paper-soft hover:text-ink-primary"
               >
                 <span>
                   {showFullPreview ? t.builder.hideFullPreviewToggle : t.builder.fullPreviewToggle}

@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowDown, ArrowLeft, Loader2 } from 'lucide-react';
-import { fetchAuditById, fetchMyAudits } from './api/client';
+import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  analyzeAudit,
+  extractSampleContract,
+  fetchAuditById,
+  fetchMyAudits,
+} from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ClauseLibraryView } from './components/ClauseLibraryView';
 import { ContractBuilderView } from './components/ContractBuilderView';
@@ -22,10 +27,31 @@ function readAuditIdFromUrl(): string | null {
   return pathMatch ? decodeURIComponent(pathMatch[1]) : null;
 }
 
+const MARQUEE_ITEMS_EN = [
+  'PAYMENT TERMS',
+  'IP RIGHTS',
+  'LIABILITY',
+  'SCOPE CREEP',
+  'TERMINATION',
+  'NON-COMPETE',
+  'GOVERNING LAW',
+];
+
+const MARQUEE_ITEMS_UK = [
+  'УМОВИ ОПЛАТИ',
+  'ПРАВА IP',
+  'ВІДПОВІДАЛЬНІСТЬ',
+  'РОЗМИТТЯ СКОУПУ',
+  'РОЗІРВАННЯ',
+  'NON-COMPETE',
+  'ЗАСТОСОВНЕ ПРАВО',
+];
+
 const MainShell: React.FC = () => {
   const { t, lang } = useLanguage();
   const { user, token } = useAuth();
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const isUk = lang === 'uk';
 
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'signup' }>({
     open: false,
@@ -36,7 +62,7 @@ const MainShell: React.FC = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLoadError, setAuditLoadError] = useState(false);
   const [recentAudits, setRecentAudits] = useState<AuditSummaryItem[]>([]);
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('builder');
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('auditor');
   const [builderTemplateOverride, setBuilderTemplateOverride] = useState<string | undefined>(
     undefined,
   );
@@ -91,6 +117,7 @@ const MainShell: React.FC = () => {
     if (window.location.search !== `?audit=${encodeURIComponent(record.auditId)}`) {
       window.history.pushState({}, '', targetUrl);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetToUpload = () => {
@@ -100,9 +127,10 @@ const MainShell: React.FC = () => {
     if (window.location.search || window.location.pathname !== '/') {
       window.history.pushState({}, '', '/');
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const jumpToMode = (mode: WorkspaceMode, focusBuilderPrompt = false) => {
+  const jumpToMode = (mode: WorkspaceMode) => {
     setActiveRecord(null);
     setAuditLoadError(false);
     setWorkspaceMode(mode);
@@ -110,53 +138,59 @@ const MainShell: React.FC = () => {
       window.history.pushState({}, '', '/');
     }
     window.setTimeout(() => {
-      if (focusBuilderPrompt && mode === 'builder') {
-        const target = document.getElementById('builder-assemble-area');
-        const textarea = document.getElementById('builder-plain-text') as HTMLTextAreaElement | null;
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        textarea?.focus({ preventScroll: true });
-      } else {
-        workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 40);
   };
 
-  const isUk = lang === 'uk';
+  const handleRunLiveSample = async () => {
+    setLoadingAudit(true);
+    setAuditLoadError(false);
+    try {
+      const extracted = await extractSampleContract('01_Predatory_IT_MSA_EN.docx', token);
+      const analyzed = await analyzeAudit(extracted.auditId, token);
+      openRecord(analyzed);
+    } catch {
+      setAuditLoadError(true);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const marqueeWords = isUk ? MARQUEE_ITEMS_UK : MARQUEE_ITEMS_EN;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-bg text-ink-primary">
+    <div className="flex min-h-screen flex-col bg-paper text-ink-primary">
       <Navbar
         activeMode={activeRecord ? 'auditor' : workspaceMode}
         onSelectMode={jumpToMode}
         onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
         onOpenDonate={() => setDonateOpen(true)}
+        showLandingAnchors={!activeRecord}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-3 pb-12 pt-6 sm:px-6 sm:pt-12">
-        {loadingAudit ? (
-          <div className="flex items-center justify-center rounded-lg border border-surface-border bg-surface-card p-12 text-base font-medium text-white">
-            <Loader2 className="mr-3 h-5 w-5 animate-spin text-brand-text" aria-hidden="true" />
+      {loadingAudit ? (
+        <main className="flex flex-1 items-center justify-center bg-paper px-4 py-20">
+          <div className="flex items-center gap-3 rounded-xl border border-paper-border bg-white px-6 py-5 text-sm font-semibold text-ink-primary shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin text-signal" aria-hidden="true" />
             <span>{t.auditNotFound.loading}</span>
           </div>
-        ) : auditLoadError ? (
-          <div className="rounded-lg border border-surface-border bg-surface-card p-8">
+        </main>
+      ) : auditLoadError ? (
+        <main className="flex-1 bg-paper px-4 py-12 sm:px-6">
+          <div className="mx-auto max-w-2xl rounded-xl border border-paper-border bg-white p-8">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-risk-highText" aria-hidden="true" />
+              <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-signal" aria-hidden="true" />
               <div>
-                <h1 className="font-display text-2xl font-bold text-white">
+                <h1 className="font-display text-2xl font-bold text-ink-primary">
                   {t.auditNotFound.title}
                 </h1>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-secondary">
+                <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
                   {t.auditNotFound.description}
                 </p>
                 <button
                   type="button"
                   onClick={resetToUpload}
-                  className="mt-5 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-forest-soft"
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                   <span>{t.auditNotFound.backBtn}</span>
@@ -164,91 +198,58 @@ const MainShell: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : !activeRecord ? (
-          <div className="space-y-10">
-            {/* Cal.com v7 Reference Centered Hero */}
-            <section className="mx-auto max-w-4xl text-center">
-              <div className="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-card px-3 py-1 text-xs">
-                <span className="h-2 w-2 animate-pulse rounded-sm bg-[#22C55E]" aria-hidden="true" />
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-white">
-                  FOP 3
-                </span>
-                <span className="text-ink-secondary">
-                  {isUk
-                    ? '16 перевірених модулів · Контекстна звірка SOW'
-                    : '16 vetted B2B clauses · SOW context audit'}
-                </span>
-              </div>
-
-              <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.04] tracking-[-0.035em] text-white sm:text-6xl lg:text-[66px]">
-                {isUk ? (
-                  <>
-                    Де договори фіксують
-                    <br className="hidden sm:inline" /> реальні умови проєкту
-                  </>
-                ) : (
-                  <>
-                    Where contracts
-                    <br className="hidden sm:inline" /> match what you agreed
-                  </>
-                )}
-              </h1>
-
-              <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-ink-secondary sm:text-lg">
+        </main>
+      ) : activeRecord ? (
+        <ResultsView
+          record={activeRecord}
+          onReset={resetToUpload}
+          onOpenDonate={() => setDonateOpen(true)}
+        />
+      ) : (
+        <main className="flex-1">
+          {/* Dark Forest Hero Section (matching Image 2) */}
+          <section className="bg-forest text-white">
+            <div className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-12">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-signal">
                 {isUk
-                  ? 'Опишіть умови простим текстом — система збере договір з перевірених пунктів ФОП або звірить SOW замовника з вашим реальним скоупом та дедлайнами.'
-                  : 'Describe your deal in plain text to assemble a contract from 16 vetted FOP clauses, or reconcile a client SOW against what you actually agreed.'}
+                  ? 'ПЕРЕВІРКА ТА КОНСТРУКТОР ДОГОВОРІВ ДЛЯ ФОП'
+                  : 'CONTRACT CHECK FOR FREELANCERS'}
               </p>
 
-              <div className="mt-7 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => jumpToMode('builder', true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-7 py-3.5 text-base font-bold text-[#0A0A0A] transition-colors hover:bg-zinc-200 sm:w-auto"
-                >
-                  <span>
-                    {isUk ? 'Створити і зібрати договір' : 'Create & assemble a contract'}
-                  </span>
-                  <ArrowDown className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => jumpToMode('auditor')}
-                  className="inline-flex w-full items-center justify-center rounded-md border border-surface-border bg-surface-card px-6 py-3.5 text-sm font-medium text-white transition-colors hover:border-surface-strong hover:bg-surface-subtle sm:w-auto"
-                >
-                  {isUk ? 'Звірити SOW із контекстом' : 'Audit SOW against project context'}
-                </button>
-              </div>
-
-              <p className="mt-3 text-xs text-ink-muted">
-                {isUk
-                  ? 'Безкоштовно без paywall · Автоматичне видалення завантажених файлів через 24 год'
-                  : '100% free · No credit card or paywall · Uploaded files auto-delete in 24h'}
-              </p>
-            </section>
-
-            {/* Cal.com-Style Embedded Product Window Frame */}
-            <section
-              ref={workspaceRef}
-              className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
-            >
-              {/* macOS Window Chrome + Integrated Mode Switcher */}
-              <div className="flex flex-col gap-2.5 border-b border-surface-border bg-surface-subtle px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-                <div className="hidden items-center gap-2 sm:flex" aria-hidden="true">
-                  <span className="h-3 w-3 rounded-sm bg-[#EF4444]/85" />
-                  <span className="h-3 w-3 rounded-sm bg-[#F59E0B]/85" />
-                  <span className="h-3 w-3 rounded-sm bg-[#22C55E]/85" />
+              <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                <div className="max-w-2xl">
+                  <h1 className="font-display text-4xl font-extrabold leading-[1.03] tracking-tight text-white sm:text-5xl lg:text-[56px]">
+                    {isUk ? (
+                      <>
+                        Підписуйте з
+                        <br />
+                        відкритими очима.
+                      </>
+                    ) : (
+                      <>
+                        Sign with your
+                        <br />
+                        eyes open.
+                      </>
+                    )}
+                  </h1>
+                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-forest-muted sm:text-base">
+                    {isUk
+                      ? 'Завантажте MSA, NDA чи SOW або зберіть договір з перевірених пунктів ФОП. За хвилину ви отримаєте рейтинг ризиків, пояснення простою мовою та готові формулювання для переговорів.'
+                      : 'Upload an MSA, NDA or SOW — or assemble one from vetted FOP clauses. In about a minute you get every risky clause ranked, explained in plain words, with replacement wording you can send back.'}
+                  </p>
                 </div>
 
-                <nav
-                  aria-label="Workspace modes"
-                  className="grid w-full grid-cols-3 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:items-center"
+                {/* Workspace Mode Switcher Pills */}
+                <div
+                  ref={workspaceRef}
+                  className="inline-flex shrink-0 flex-wrap items-center gap-1.5 rounded-full border border-forest-border bg-forest-deep p-1"
                 >
                   {(
                     [
-                      ['builder', t.modes.builder],
-                      ['auditor', t.modes.auditor],
-                      ['library', t.modes.library],
+                      ['auditor', isUk ? 'Аудит договору' : 'Audit contract'],
+                      ['builder', isUk ? 'Зібрати договір' : 'Assemble contract'],
+                      ['library', isUk ? '16 клаузул' : 'Vetted clauses'],
                     ] as const
                   ).map(([modeId, label]) => {
                     const active = workspaceMode === modeId;
@@ -257,89 +258,201 @@ const MainShell: React.FC = () => {
                         key={modeId}
                         type="button"
                         onClick={() => setWorkspaceMode(modeId)}
-                        className={`rounded-md px-2 py-2 text-center text-[11px] font-semibold leading-tight transition-colors sm:px-3 sm:py-1.5 sm:text-xs ${
+                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
                           active
-                            ? 'bg-white text-[#0A0A0A]'
-                            : 'text-ink-secondary hover:bg-surface-card hover:text-white'
+                            ? 'bg-signal text-white'
+                            : 'text-forest-muted hover:text-white'
                         }`}
                       >
                         {label}
                       </button>
                     );
                   })}
-                </nav>
-
-                <span className="hidden font-mono text-[11px] text-ink-muted lg:inline">
-                  {t.disclaimerBadge}
-                </span>
+                </div>
               </div>
 
-              {/* Active App Content */}
-              <div className="bg-surface-bg p-3.5 sm:p-7">
-                {workspaceMode === 'builder' ? (
-                  <ContractBuilderView initialTemplateId={builderTemplateOverride} />
-                ) : workspaceMode === 'library' ? (
-                  <ClauseLibraryView
-                    onUseTemplate={(tplId) => {
-                      setBuilderTemplateOverride(tplId);
-                      setWorkspaceMode('builder');
-                    }}
-                  />
-                ) : (
-                  <div className="space-y-8">
+              {/* Hero Workspace Area */}
+              {workspaceMode === 'auditor' ? (
+                <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                  {/* Left: White Upload Card */}
+                  <div className="rounded-xl bg-white p-5 shadow-2xl shadow-black/25 sm:p-6 lg:col-span-6">
                     {user && recentAudits.length > 0 && (
-                      <div className="border-b border-surface-border pb-6">
-                        <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                      <div className="mb-5 border-b border-paper-border pb-4">
+                        <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                           {t.recentAudits.title}
-                        </h2>
-                        <div className="divide-y divide-surface-border overflow-hidden rounded-md border border-surface-border bg-surface-card">
-                          {recentAudits.slice(0, 5).map((item) => (
-                            <div
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {recentAudits.slice(0, 4).map((item) => (
+                            <button
                               key={item.auditId}
-                              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                              type="button"
+                              onClick={() => void loadAuditFromId(item.auditId)}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-paper-border bg-paper px-3 py-1 text-xs font-medium text-ink-primary hover:border-signal hover:text-signal"
                             >
-                              <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-medium text-white">
-                                  {item.fileName}
+                              <span className="max-w-[140px] truncate">{item.fileName}</span>
+                              {item.overallRiskScore !== null && (
+                                <span className="font-mono text-[10px] text-ink-muted">
+                                  {item.overallRiskScore}/100
                                 </span>
-                                {item.overallRiskScore !== null && (
-                                  <span className="rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
-                                    {t.recentAudits.scorePrefix}: {item.overallRiskScore}/100
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => void loadAuditFromId(item.auditId)}
-                                className="rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-surface-strong"
-                              >
-                                {t.recentAudits.openBtn}
-                              </button>
-                            </div>
+                              )}
+                            </button>
                           ))}
                         </div>
                       </div>
                     )}
 
                     <UploadZone onExtracted={openRecord} />
-                    <LiveClauseSpecimen />
                   </div>
-                )}
-              </div>
-            </section>
-          </div>
-        ) : (
-          <ResultsView
-            record={activeRecord}
-            onReset={resetToUpload}
-            onOpenDonate={() => setDonateOpen(true)}
-          />
-        )}
-      </main>
 
-      <footer className="border-t border-surface-border bg-surface-bg">
-        <div className="mx-auto max-w-6xl px-4 py-4 text-xs text-ink-muted sm:px-6">
-          {t.disclaimerBanner}
+                  {/* Right: Immersive Interactive Sample Scan Card */}
+                  <div className="lg:col-span-6 lg:pt-4">
+                    <LiveClauseSpecimen onRunSample={() => void handleRunLiveSample()} />
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-8 rounded-xl bg-white p-5 text-ink-primary shadow-2xl shadow-black/25 sm:p-7">
+                  {workspaceMode === 'builder' ? (
+                    <ContractBuilderView initialTemplateId={builderTemplateOverride} />
+                  ) : (
+                    <ClauseLibraryView
+                      onUseTemplate={(tplId) => {
+                        setBuilderTemplateOverride(tplId);
+                        setWorkspaceMode('builder');
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Full-Width Signal Orange Marquee Ticker (matching Image 2) */}
+          <div className="overflow-hidden bg-signal py-2.5 text-forest-deep">
+            <div className="animate-cg-marquee font-mono text-xs font-bold tracking-widest">
+              {[...marqueeWords, ...marqueeWords, ...marqueeWords].map((word, idx) => (
+                <span key={idx} className="mx-3 inline-flex items-center gap-3 whitespace-nowrap">
+                  <span>{word}</span>
+                  <span aria-hidden="true">/</span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Three steps, about a minute (Light Paper Section) */}
+          <section id="how-it-works" className="bg-paper px-4 py-14 sm:px-6 sm:py-16">
+            <div className="mx-auto max-w-6xl">
+              <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-primary sm:text-3xl">
+                {isUk ? 'Три кроки, близько хвилини' : 'Three steps, about a minute'}
+              </h2>
+
+              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                {(
+                  [
+                    [
+                      '1',
+                      isUk ? 'Завантажте' : 'Upload',
+                      isUk
+                        ? 'PDF, DOCX або контекст проєкту. Вкажіть свою сторону — Виконавець чи Замовник.'
+                        : 'PDF, DOCX or project context. Say whether you are the contractor or the client.',
+                    ],
+                    [
+                      '2',
+                      isUk ? 'Прочитайте рейтинг' : 'Read the ranking',
+                      isUk
+                        ? 'Кожна клаузула отримує рівень ризику, пояснення у двох реченнях та точну цитату.'
+                        : 'Every clause gets a severity, a two-sentence summary and the exact words that worry us.',
+                    ],
+                    [
+                      '3',
+                      isUk ? 'Надішліть правки' : 'Push back',
+                      isUk
+                        ? 'Скопіюйте жорстку, збалансовану або м’яку контр-клаузулу й додайте у переговори.'
+                        : 'Copy a firm, balanced or friendly counter-clause and send it with your comments.',
+                    ],
+                  ] as const
+                ).map(([num, title, desc]) => (
+                  <div
+                    key={num}
+                    className="rounded-xl border border-paper-border bg-white p-6 transition-colors hover:border-paper-strong"
+                  >
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-forest font-mono text-xs font-bold text-white">
+                      {num}
+                    </span>
+                    <h3 className="mt-4 font-display text-base font-bold text-ink-primary">
+                      {title}
+                    </h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Dark Forest Privacy Section ("Your contract stays yours.") */}
+          <section id="privacy" className="bg-forest px-4 py-14 text-white sm:px-6 sm:py-16">
+            <div className="mx-auto max-w-6xl">
+              <h2 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                {isUk ? 'Ваш договір залишається вашим.' : 'Your contract stays yours.'}
+              </h2>
+
+              <div className="mt-7 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div>
+                  <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
+                    {isUk ? 'Видалення за 24 години' : 'Deleted after 24 hours'}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                    {isUk
+                      ? 'Завантажений файл та результати аналізу автоматично видаляються.'
+                      : 'The file and the analysis are removed automatically.'}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
+                    {isUk ? 'Шифрування на сервері' : 'Encrypted at rest'}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                    {isUk
+                      ? 'І файлове сховище S3, і база даних DynamoDB зашифровані.'
+                      : 'Storage and database are both encrypted.'}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
+                    {isUk ? 'Без тексту в логах' : 'No text in logs'}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                    {isUk
+                      ? 'Текст вашого договору ніколи не записується у серверні логи.'
+                      : 'Contract text is never written to our logs.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* Light Paper Footer with Support Bar */}
+      <footer className="bg-paper px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-6xl space-y-4">
+          {!activeRecord && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-paper-border bg-white px-5 py-4">
+              <p className="text-sm text-ink-secondary">
+                <strong className="font-semibold text-ink-primary">ClauseGuard</strong>{' '}
+                {isUk
+                  ? 'безкоштовний. Якщо він вберіг вас від поганої угоди, підтримайте проєкт.'
+                  : 'is free. If it saved you from a bad deal, you can chip in.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setDonateOpen(true)}
+                className="rounded-full border border-paper-border bg-paper px-4 py-1.5 text-xs font-semibold text-ink-primary transition-colors hover:border-forest hover:bg-white"
+              >
+                {isUk ? 'Підтримати через Monobank' : 'Support via Monobank'}
+              </button>
+            </div>
+          )}
+          <p className="text-xs text-ink-muted">{t.disclaimerBanner}</p>
         </div>
       </footer>
 

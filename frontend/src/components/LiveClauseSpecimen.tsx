@@ -1,129 +1,211 @@
 import React, { useState } from 'react';
-import { AlertOctagon, Check, Copy } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-export const LiveClauseSpecimen: React.FC = () => {
-  const { t } = useLanguage();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+interface SampleBarItem {
+  id: string;
+  clause: string;
+  labelEn: string;
+  labelUk: string;
+  severity: 'Critical' | 'Medium' | 'Low';
+  severityUk: string;
+  widthPct: number;
+  excerptEn: string;
+  excerptUk: string;
+  fixEn: string;
+  fixUk: string;
+}
 
-  const items = t.specimen.items;
-  const active = items[activeIndex] ?? items[0];
+const SAMPLE_BARS: SampleBarItem[] = [
+  {
+    id: 'pay',
+    clause: '§ 4.2',
+    labelEn: 'Payment',
+    labelUk: 'Оплата',
+    severity: 'Critical',
+    severityUk: 'Критично',
+    widthPct: 86,
+    excerptEn: 'Invoices are payable within ninety (90) days of receipt.',
+    excerptUk: 'Оплата рахунків здійснюється протягом 90 днів з моменту отримання.',
+    fixEn: 'Cut payment window from Net 90 to Net 14 + statutory late interest.',
+    fixUk: 'Скоротіть строк оплати з 90 до 14 календарних днів + пеня за прострочення.',
+  },
+  {
+    id: 'ip',
+    clause: '§ 5.1',
+    labelEn: 'IP rights',
+    labelUk: 'Права IP',
+    severity: 'Critical',
+    severityUk: 'Критично',
+    widthPct: 78,
+    excerptEn: 'All work product, including pre-existing tools, becomes Client property.',
+    excerptUk: 'Усі результати, включно з попередніми інструментами, переходять Замовнику.',
+    fixEn: 'Keep pre-existing tools; transfer deliverable IP only after 100% payment.',
+    fixUk: 'Залиште власні бібліотеки за ФОП; передача IP — лише після 100% оплати.',
+  },
+  {
+    id: 'liab',
+    clause: '§ 9.2',
+    labelEn: 'Liability',
+    labelUk: 'Відповід.',
+    severity: 'Medium',
+    severityUk: 'Середньо',
+    widthPct: 54,
+    excerptEn: "Contractor's liability is unlimited for any claim arising from services.",
+    excerptUk: 'Відповідальність Виконавця є необмеженою за будь-якими вимогами.',
+    fixEn: 'Cap total liability at fees paid in the preceding 12 months.',
+    fixUk: 'Обмежте відповідальність сумою фактично отриманої винагороди.',
+  },
+  {
+    id: 'scope',
+    clause: '§ 3.4',
+    labelEn: 'Scope',
+    labelUk: 'Скоуп',
+    severity: 'Medium',
+    severityUk: 'Середньо',
+    widthPct: 44,
+    excerptEn: 'Revisions and additional features as requested by Client without cap.',
+    excerptUk: 'Доопрацювання та правки за запитом Замовника без обмеження кількості.',
+    fixEn: 'Limit to 2 revision rounds; out-of-scope work requires a signed Change Order.',
+    fixUk: 'Обмежте 2 раундами правок; додатковий функціонал — окремим Change Order.',
+  },
+  {
+    id: 'exit',
+    clause: '§ 7.3',
+    labelEn: 'Exit',
+    labelUk: 'Вихід',
+    severity: 'Low',
+    severityUk: 'Низько',
+    widthPct: 24,
+    excerptEn: 'Client may terminate immediately; Contractor owes 60 days notice.',
+    excerptUk: 'Замовник може розірвати миттєво, а Виконавець — за 60 днів.',
+    fixEn: 'Make termination mutual with 14-day notice and payment for work completed.',
+    fixUk: 'Зробіть розірвання взаємним (14 днів) з оплатою виконаного обсягу.',
+  },
+  {
+    id: 'law',
+    clause: '§ 12',
+    labelEn: 'Law',
+    labelUk: 'Право',
+    severity: 'Low',
+    severityUk: 'Низько',
+    widthPct: 14,
+    excerptEn: 'Governed by the laws of Delaware, USA.',
+    excerptUk: 'Застосовне право — штат Делавер, США.',
+    fixEn: 'Acceptable if payment is USD wire, or request neutral arbitration.',
+    fixUk: 'Прийнятно для міжнародного B2B за умови чіткого валютного розрахунку.',
+  },
+];
 
-  const handleCopy = async (id: string, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      window.setTimeout(() => setCopiedId(null), 1800);
-    } catch {
-      // Clipboard API may be blocked on non-HTTPS origins
-    }
+interface LiveClauseSpecimenProps {
+  onRunSample?: () => void;
+}
+
+export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSample }) => {
+  const { lang } = useLanguage();
+  const isUk = lang === 'uk';
+  const [selectedId, setSelectedId] = useState<string>('pay');
+
+  const active = SAMPLE_BARS.find((b) => b.id === selectedId) ?? SAMPLE_BARS[0];
+
+  const barColor = (sev: SampleBarItem['severity']) => {
+    if (sev === 'Critical') return 'bg-signal';
+    if (sev === 'Medium') return 'bg-[#EAB308]';
+    return 'bg-[#52C48A]';
   };
 
   return (
-    <section
-      aria-labelledby="specimen-title"
-      className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
-    >
-      {/* Header strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border bg-surface-subtle px-4 py-3">
-        <h2
-          id="specimen-title"
-          className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary"
-        >
-          {t.specimen.panelTitle}
-        </h2>
-        <span className="inline-flex items-center gap-1.5 rounded-sm border border-risk-highBorder bg-risk-highBg px-2.5 py-0.5 font-mono text-[11px] font-semibold text-risk-highText">
-          <AlertOctagon className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{active.riskLabel}</span>
-        </span>
+    <div className="rounded-xl border border-forest-border bg-forest-deep/90 p-5 text-white shadow-2xl shadow-black/25">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 border-b border-forest-border pb-3 font-mono text-[11px] uppercase tracking-wider text-forest-muted">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#52C48A]" aria-hidden="true" />
+          <span>
+            {isUk
+              ? 'ЗРАЗОК СКАНУ · 9 КЛАУЗУЛ · ЗА РИЗИКОМ'
+              : 'SAMPLE SCAN · 9 CLAUSES · SORTED BY RISK'}
+          </span>
+        </div>
       </div>
 
-      {/* Clause switch tabs */}
-      <div
-        className="flex flex-wrap border-b border-surface-border bg-surface-bg"
-        role="tablist"
-        aria-label="Sample flagged clauses"
-      >
-        {items.map((item, idx) => {
-          const isSelected = idx === activeIndex;
+      {/* Interactive Bars */}
+      <div className="mt-4 space-y-2.5">
+        {SAMPLE_BARS.map((item, idx) => {
+          const isSelected = item.id === active.id;
           return (
             <button
               key={item.id}
               type="button"
-              role="tab"
-              aria-selected={isSelected}
-              onClick={() => setActiveIndex(idx)}
-              className={`border-r border-surface-border px-4 py-2.5 text-xs font-medium transition-colors ${
-                isSelected
-                  ? 'bg-surface-subtle text-white'
-                  : 'text-ink-muted hover:bg-surface-card hover:text-ink-primary'
+              onClick={() => setSelectedId(item.id)}
+              onMouseEnter={() => setSelectedId(item.id)}
+              className={`group flex w-full items-center gap-3 rounded-md px-2 py-1 text-left transition-colors ${
+                isSelected ? 'bg-forest-card/80' : 'hover:bg-forest-card/40'
               }`}
             >
-              {item.tabLabel}
+              <span className="w-28 shrink-0 truncate font-mono text-xs text-white/90">
+                {item.clause} {isUk ? item.labelUk : item.labelEn}
+              </span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-forest-soft">
+                <div
+                  className={`animate-cg-bar h-full rounded-full ${barColor(item.severity)}`}
+                  style={{
+                    width: `${item.widthPct}%`,
+                    animationDelay: `${idx * 70}ms`,
+                  }}
+                />
+              </div>
+              <span className="w-16 shrink-0 text-right font-mono text-[11px] text-forest-muted">
+                {isUk ? item.severityUk : item.severity}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* 3-Column Comparison Grid */}
-      <div className="grid grid-cols-1 divide-y divide-surface-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-        {/* Column 1: Original Clause */}
-        <div className="flex flex-col p-5">
-          <div className="mb-3 flex items-center justify-between border-b border-surface-border pb-2">
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              {t.specimen.col1Title}
-            </span>
-            <span className="font-mono text-[11px] font-medium text-ink-secondary">
-              {active.clauseRef}
-            </span>
-          </div>
-          <blockquote className="rounded-md border border-surface-border bg-surface-bg p-4 text-sm leading-relaxed text-ink-primary">
-            “{active.originalExcerpt}”
-          </blockquote>
+      {/* Live Interactive Clause Inspector */}
+      <div className="mt-4 rounded-lg border border-forest-border bg-forest-card/60 p-3.5 transition-all">
+        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-forest-muted">
+          <span>
+            {active.clause} · {isUk ? active.labelUk : active.labelEn}
+          </span>
+          <span
+            className={
+              active.severity === 'Critical'
+                ? 'text-signal'
+                : active.severity === 'Medium'
+                  ? 'text-[#FACC15]'
+                  : 'text-[#52C48A]'
+            }
+          >
+            {isUk ? active.severityUk : active.severity}
+          </span>
         </div>
+        <p className="mt-1.5 font-mono text-xs text-white/85">
+          “{isUk ? active.excerptUk : active.excerptEn}”
+        </p>
+        <p className="mt-2 text-xs text-[#86EFAC]">
+          → {isUk ? active.fixUk : active.fixEn}
+        </p>
+      </div>
 
-        {/* Column 2: Plain-Language Meaning */}
-        <div className="flex flex-col p-5">
-          <div className="mb-3 border-b border-surface-border pb-2">
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-              {t.specimen.col2Title}
-            </span>
-          </div>
-          <p className="text-sm leading-relaxed text-ink-secondary">
-            {active.plainLanguageSummary}
-          </p>
-        </div>
-
-        {/* Column 3: Counter-Clause */}
-        <div className="flex flex-col bg-surface-subtle/40 p-5">
-          <div className="mb-3 flex items-center justify-between border-b border-surface-border pb-2">
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-brand-text">
-              {t.specimen.col3Title}
-            </span>
-          </div>
-          <p className="flex-1 rounded-md border border-surface-border bg-surface-bg p-3.5 text-[13px] leading-relaxed text-ink-primary">
-            {active.counterClause}
-          </p>
+      {/* Footer */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-forest-border pt-3">
+        <p className="text-xs text-forest-muted">
+          {isUk
+            ? 'Довша смужка — вищий ризик. Найгірші клаузули зверху.'
+            : 'Longer bar, bigger risk. You see the worst clauses first.'}
+        </p>
+        {onRunSample && (
           <button
             type="button"
-            onClick={() => void handleCopy(active.id, active.counterClause)}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-3 py-2 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+            onClick={onRunSample}
+            className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-signal transition-colors hover:text-white"
           >
-            {copiedId === active.id ? (
-              <>
-                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{t.specimen.copiedBtn}</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{t.specimen.copyBtn}</span>
-              </>
-            )}
+            <span>{isUk ? 'Відкрити повний звіт' : 'Run live sample'}</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
-        </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 };

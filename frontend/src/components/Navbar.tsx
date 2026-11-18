@@ -2,13 +2,14 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-export type WorkspaceMode = 'builder' | 'auditor' | 'library';
+export type WorkspaceMode = 'auditor' | 'builder' | 'library';
 
 interface NavbarProps {
   activeMode?: WorkspaceMode;
   onSelectMode?: (mode: WorkspaceMode) => void;
   onOpenAuth: (mode: 'login' | 'signup') => void;
   onOpenDonate: () => void;
+  showLandingAnchors?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,41 +17,41 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectMode,
   onOpenAuth,
   onOpenDonate,
+  showLandingAnchors = true,
 }) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
 
   const navItems: Array<[WorkspaceMode, string]> = [
-    ['builder', lang === 'uk' ? 'Конструктор' : 'Builder'],
-    ['auditor', lang === 'uk' ? 'Аудитор SOW' : 'SOW Auditor'],
-    ['library', lang === 'uk' ? 'Шаблони' : 'Templates'],
+    ['auditor', lang === 'uk' ? 'Аудит' : 'Audit'],
+    ['builder', lang === 'uk' ? 'Зібрати договір' : 'Assemble'],
+    ['library', lang === 'uk' ? 'Клаузули' : 'Clauses'],
   ];
 
   return (
-    <header className="mx-auto w-full max-w-6xl px-3 pt-3 sm:px-6 sm:pt-4">
-      <div className="rounded-lg border border-surface-border bg-surface-card">
-        <div className="flex h-14 items-center justify-between px-3 sm:px-4">
-          {/* Left: Wordmark */}
-          <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="flex items-center gap-2 text-ink-primary transition-colors hover:text-white"
-            >
-              <span className="font-display text-base font-bold tracking-tight text-white sm:text-lg">
-                {t.brand}
-              </span>
-            </a>
-            <span className="hidden text-surface-strong lg:inline" aria-hidden="true">
-              /
-            </span>
-            <span className="hidden font-mono text-[10px] uppercase tracking-wider text-ink-muted lg:inline">
-              {t.disclaimerBadge}
-            </span>
-          </div>
+    <header className="w-full border-b border-forest-border bg-forest text-white">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        {/* Left: § clauseguard mark */}
+        <a
+          href="/"
+          className="flex items-center gap-2.5 text-white transition-opacity hover:opacity-90"
+        >
+          <span
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-signal font-mono text-sm font-bold text-white"
+            aria-hidden="true"
+          >
+            §
+          </span>
+          <span className="font-display text-lg font-extrabold tracking-tight">
+            <span className="text-white">clause</span>
+            <span className="text-signal">guard</span>
+          </span>
+        </a>
 
-          {/* Center: Desktop nav links */}
+        {/* Center/Right navigation */}
+        <div className="flex items-center gap-2 sm:gap-5">
           {onSelectMode && (
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Workspace switcher">
+            <nav className="hidden items-center gap-1 md:flex" aria-label="Workspace modes">
               {navItems.map(([modeId, label]) => {
                 const active = activeMode === modeId;
                 return (
@@ -58,10 +59,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     key={modeId}
                     type="button"
                     onClick={() => onSelectMode(modeId)}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                       active
-                        ? 'bg-surface-subtle text-white'
-                        : 'text-ink-secondary hover:text-white'
+                        ? 'bg-forest-soft text-white'
+                        : 'text-forest-muted hover:text-white'
                     }`}
                   >
                     {label}
@@ -71,111 +72,105 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
           )}
 
-          {/* Right: Language, Donate, Auth */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            <div
-              className="inline-flex rounded-md border border-surface-border bg-surface-bg p-0.5"
-              role="group"
-              aria-label="Language switcher"
-            >
-              <button
-                type="button"
-                onClick={() => setLang('en')}
-                className={`rounded-sm px-2 py-1 font-mono text-[11px] font-medium transition-colors ${
-                  lang === 'en'
-                    ? 'bg-surface-subtle text-white'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                onClick={() => setLang('uk')}
-                className={`rounded-sm px-2 py-1 font-mono text-[11px] font-medium transition-colors ${
-                  lang === 'uk'
-                    ? 'bg-surface-subtle text-white'
-                    : 'text-ink-muted hover:text-ink-primary'
-                }`}
-              >
-                UA
-              </button>
+          {showLandingAnchors && (
+            <div className="hidden items-center gap-4 text-xs font-medium text-forest-muted lg:flex">
+              <a href="#how-it-works" className="transition-colors hover:text-white">
+                {lang === 'uk' ? 'Як це працює' : 'How it works'}
+              </a>
+              <a href="#privacy" className="transition-colors hover:text-white">
+                {lang === 'uk' ? 'Приватність' : 'Privacy'}
+              </a>
             </div>
+          )}
 
+          {/* UA / EN pill toggle matching template */}
+          <div
+            className="inline-flex items-center rounded-full border border-forest-border bg-forest-deep p-0.5"
+            role="group"
+            aria-label="Language switcher"
+          >
             <button
               type="button"
-              onClick={onOpenDonate}
-              className="hidden rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong hover:bg-surface-border sm:inline-flex"
+              onClick={() => setLang('uk')}
+              className={`rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors ${
+                lang === 'uk' ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
+              }`}
             >
-              {t.nav.donate}
+              UA
             </button>
-
-            {user ? (
-              <div className="flex items-center gap-2 border-l border-surface-border pl-2">
-                <span className="hidden font-mono text-xs text-ink-secondary sm:inline">
-                  {user.email}
-                </span>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="rounded-md border border-surface-border bg-surface-subtle px-2.5 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong sm:px-3"
-                >
-                  {t.nav.signOut}
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 border-l border-surface-border pl-1.5 sm:gap-1.5 sm:pl-2">
-                <button
-                  type="button"
-                  onClick={() => onOpenAuth('login')}
-                  className="rounded-md px-2 py-1.5 text-xs font-medium text-ink-secondary transition-colors hover:text-white sm:px-2.5"
-                >
-                  {t.nav.signIn}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onOpenAuth('signup')}
-                  className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 sm:px-3.5"
-                >
-                  {t.nav.signUp}
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setLang('en')}
+              className={`rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors ${
+                lang === 'en' ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
+              }`}
+            >
+              EN
+            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={onOpenDonate}
+            className="hidden rounded-full border border-forest-border px-3 py-1.5 text-xs font-medium text-forest-muted transition-colors hover:border-white/40 hover:text-white sm:inline-flex"
+          >
+            {t.nav.donate}
+          </button>
+
+          {user ? (
+            <div className="flex items-center gap-2 border-l border-forest-border pl-2.5">
+              <span className="hidden max-w-[140px] truncate font-mono text-xs text-forest-muted sm:inline">
+                {user.email}
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                className="rounded-full border border-forest-border px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-forest-soft"
+              >
+                {t.nav.signOut}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 border-l border-forest-border pl-2.5">
+              <button
+                type="button"
+                onClick={() => onOpenAuth('login')}
+                className="rounded-full px-2.5 py-1.5 text-xs font-medium text-forest-muted transition-colors hover:text-white"
+              >
+                {t.nav.signIn}
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenAuth('signup')}
+                className="rounded-full bg-signal px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-signal-hover"
+              >
+                {t.nav.signUp}
+              </button>
+            </div>
+          )}
         </div>
-
-        {/* Mobile Quick Nav Row */}
-        {onSelectMode && (
-          <div className="flex items-center justify-between gap-1 border-t border-surface-border px-2 py-1.5 md:hidden">
-            <div className="flex flex-1 items-center gap-1">
-              {navItems.map(([modeId, label]) => {
-                const active = activeMode === modeId;
-                return (
-                  <button
-                    key={modeId}
-                    type="button"
-                    onClick={() => onSelectMode(modeId)}
-                    className={`flex-1 rounded-md px-2 py-1.5 text-center text-xs font-medium transition-colors ${
-                      active
-                        ? 'bg-surface-subtle text-white'
-                        : 'text-ink-secondary hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={onOpenDonate}
-              className="shrink-0 rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-[11px] font-medium text-ink-secondary sm:hidden"
-            >
-              {lang === 'uk' ? 'Донат' : 'Donate'}
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Mobile quick mode switcher */}
+      {onSelectMode && (
+        <div className="flex items-center gap-1 border-t border-forest-border bg-forest-deep px-3 py-2 md:hidden">
+          {navItems.map(([modeId, label]) => {
+            const active = activeMode === modeId;
+            return (
+              <button
+                key={modeId}
+                type="button"
+                onClick={() => onSelectMode(modeId)}
+                className={`flex-1 rounded-full px-2 py-1.5 text-center text-xs font-semibold transition-colors ${
+                  active ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 };

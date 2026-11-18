@@ -143,7 +143,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
       <div className="w-full max-w-md rounded-lg border border-surface-strong bg-surface-card p-6">
         <div className="flex items-start justify-between border-b border-surface-border pb-3">
           <div>
-            <h2 id="auth-modal-title" className="font-display text-lg font-bold text-white">
+            <h2 id="auth-modal-title" className="font-display text-lg font-bold text-ink-primary">
               {mode === 'signup' ? t.auth.signUpTitle : t.auth.signInTitle}
             </h2>
             <p className="mt-0.5 text-xs text-ink-muted">{t.auth.subtitle}</p>
@@ -152,7 +152,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
             type="button"
             onClick={onClose}
             aria-label={t.auth.close}
-            className="rounded-md p-1 text-ink-muted transition-colors hover:bg-surface-subtle hover:text-white"
+            className="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-soft hover:text-ink-primary"
           >
             <X className="h-4 w-4" />
           </button>
@@ -168,7 +168,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
             <button
               type="button"
               onClick={() => setError(t.auth.googleNotConfigured)}
-              className="inline-flex w-full items-center justify-center gap-2.5 rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-full border border-paper-border bg-white px-4 py-2.5 text-sm font-semibold text-ink-primary transition-colors hover:bg-paper-soft"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -213,7 +213,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
+                className="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink-primary focus:border-signal focus:bg-white focus:outline-none"
               />
             </div>
           )}
@@ -259,7 +259,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md border border-surface-strong bg-surface-subtle px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-surface-border disabled:opacity-60"
+            className="w-full rounded-full bg-forest px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-forest-soft disabled:opacity-60"
           >
             {submitting
               ? '...'

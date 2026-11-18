@@ -46,14 +46,14 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
     >
       <div className="w-full max-w-md rounded-lg border border-surface-strong bg-surface-card p-6">
         <div className="flex items-start justify-between border-b border-surface-border pb-3">
-          <h2 id="donate-modal-title" className="font-display text-lg font-bold text-white">
+          <h2 id="donate-modal-title" className="font-display text-lg font-bold text-ink-primary">
             {t.donation.title}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label={t.donation.close}
-            className="rounded-md p-1 text-ink-muted transition-colors hover:bg-surface-subtle hover:text-white"
+            className="rounded-md p-1 text-ink-muted transition-colors hover:bg-paper-soft hover:text-ink-primary"
           >
             <X className="h-4 w-4" />
           </button>
@@ -114,7 +114,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpenedJar(true)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-signal px-4 py-2.5 text-xs font-bold text-ink-primary transition-colors hover:bg-signal-hover"
           >
             <span>
               {t.donation.openJar} ({selectedUah} UAH)
@@ -127,7 +127,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
               type="button"
               disabled={submittingMock}
               onClick={() => void handleMockDonate()}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-2 text-xs font-medium text-white transition-colors hover:border-surface-strong disabled:opacity-60"
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-2 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong disabled:opacity-60"
             >
               {submittingMock && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
               <span>{t.donation.testDonateBtn}</span>
@@ -135,7 +135,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-surface-border px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:bg-surface-subtle hover:text-white"
+              className="rounded-md border border-surface-border px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:bg-paper-soft hover:text-ink-primary"
             >
               {t.donation.close}
             </button>
