@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, ArrowRight, FileCheck, Layers, Loader2, MessageSquareText } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, FileCheck, Layers, Loader2, MessageSquareText } from 'lucide-react';
 import {
   analyzeAudit,
   extractSampleContract,
@@ -247,11 +247,10 @@ const MainShell: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSelectPage('auditor')}
-                  className="inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3.5 text-xs font-bold text-white shadow-xl shadow-signal/30 transition-all hover:bg-signal-hover hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-3.5 text-xs font-bold text-white transition-colors hover:bg-signal-hover"
                 >
                   <FileCheck className="h-4 w-4" aria-hidden="true" />
                   <span>{isUk ? 'Перевірити договір' : 'Audit contract'}</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
 
                 <button
@@ -411,10 +410,9 @@ const MainShell: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSelectPage('auditor')}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-signal px-6 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-signal-hover"
+                  className="inline-flex shrink-0 items-center rounded-full bg-signal px-6 py-2.5 text-xs font-bold text-white transition-colors hover:bg-signal-hover"
                 >
                   <span>{isUk ? 'Почати аудит договору' : 'Start contract audit'}</span>
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
