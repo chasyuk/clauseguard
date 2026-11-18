@@ -13,20 +13,12 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  activeMode,
-  onSelectMode,
   onOpenAuth,
   onOpenDonate,
   showLandingAnchors = true,
 }) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
-
-  const navItems: Array<[WorkspaceMode, string]> = [
-    ['auditor', lang === 'uk' ? 'Аудит' : 'Audit'],
-    ['reconcile', lang === 'uk' ? 'Звірка з чатом' : 'Chat vs SOW'],
-    ['builder', lang === 'uk' ? 'Зібрати договір' : 'Assemble'],
-  ];
 
   return (
     <header className="w-full border-b border-forest-border bg-forest text-white">
@@ -48,30 +40,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </a>
 
-        {/* Center/Right navigation */}
+        {/* Right navigation */}
         <div className="flex items-center gap-2 sm:gap-5">
-          {onSelectMode && (
-            <nav className="hidden items-center gap-1 md:flex" aria-label="Workspace modes">
-              {navItems.map(([modeId, label]) => {
-                const active = activeMode === modeId;
-                return (
-                  <button
-                    key={modeId}
-                    type="button"
-                    onClick={() => onSelectMode(modeId)}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                      active
-                        ? 'bg-forest-soft text-white'
-                        : 'text-forest-muted hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </nav>
-          )}
-
           {showLandingAnchors && (
             <div className="hidden items-center gap-4 text-xs font-medium text-forest-muted lg:flex">
               <a href="#how-it-works" className="transition-colors hover:text-white">
@@ -150,27 +120,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
       </div>
-
-      {/* Mobile quick mode switcher */}
-      {onSelectMode && (
-        <div className="flex items-center gap-1 border-t border-forest-border bg-forest-deep px-3 py-2 md:hidden">
-          {navItems.map(([modeId, label]) => {
-            const active = activeMode === modeId;
-            return (
-              <button
-                key={modeId}
-                type="button"
-                onClick={() => onSelectMode(modeId)}
-                className={`flex-1 rounded-full px-2 py-1.5 text-center text-xs font-semibold transition-colors ${
-                  active ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      )}
     </header>
   );
 };
