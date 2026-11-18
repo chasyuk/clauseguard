@@ -178,7 +178,7 @@ const MainShell: React.FC = () => {
   const marqueeWords = isUk ? MARQUEE_ITEMS_UK : MARQUEE_ITEMS_EN;
 
   return (
-    <div className="flex min-h-screen flex-col bg-paper text-ink-primary">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper text-ink-primary">
       <Navbar
         activeMode={activeRecord ? 'auditor' : workspaceMode}
         onSelectMode={jumpToMode}
@@ -259,10 +259,10 @@ const MainShell: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Workspace Mode Switcher Pills */}
+                {/* Workspace Mode Switcher Pills (Single proportional row on mobile & desktop) */}
                 <div
                   ref={workspaceRef}
-                  className="inline-flex shrink-0 flex-wrap items-center gap-1.5 rounded-full border border-forest-border bg-forest-deep p-1"
+                  className="grid w-full grid-cols-3 items-center gap-1 rounded-full border border-forest-border bg-forest-deep p-1 sm:inline-flex sm:w-auto sm:shrink-0 sm:gap-1.5"
                 >
                   {(
                     [
@@ -277,7 +277,7 @@ const MainShell: React.FC = () => {
                         key={modeId}
                         type="button"
                         onClick={() => setWorkspaceMode(modeId)}
-                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        className={`truncate rounded-full px-2 py-2 text-center text-[11px] font-semibold transition-colors sm:px-4 sm:py-1.5 sm:text-xs ${
                           active
                             ? 'bg-signal text-white'
                             : 'text-forest-muted hover:text-white'

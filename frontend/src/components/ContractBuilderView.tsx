@@ -304,7 +304,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
         </div>
 
         {/* Clickable 3-Step Pills */}
-        <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-paper-border bg-paper p-1 text-xs font-semibold">
+        <div className="grid w-full grid-cols-3 items-center gap-1 rounded-xl border border-paper-border bg-paper p-1 text-[11px] font-semibold sm:inline-flex sm:w-auto sm:text-xs">
           <button
             type="button"
             onClick={() => setWizardStep(1)}
@@ -316,7 +316,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
           >
             {isUk ? '1. Умови / Шаблон' : '1. Input / Template'}
           </button>
-          <span className="text-ink-muted">→</span>
+          <span className="hidden text-ink-muted sm:inline">→</span>
           <button
             type="button"
             onClick={() => setWizardStep(2)}
@@ -328,7 +328,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
           >
             {isUk ? '2. Перевірка параметрів' : '2. Check parameters'}
           </button>
-          <span className="text-ink-muted">→</span>
+          <span className="hidden text-ink-muted sm:inline">→</span>
           <button
             type="button"
             disabled={!assembled}
@@ -360,7 +360,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
       {wizardStep === 1 && (
         <div className="space-y-5">
           {/* Sub-mode Toggle: Text vs Template */}
-          <div className="inline-flex rounded-xl border border-paper-border bg-paper p-1">
+          <div className="grid w-full grid-cols-1 gap-1 rounded-xl border border-paper-border bg-paper p-1 sm:inline-flex sm:w-auto sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setBuildMode('text')}
