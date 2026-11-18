@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { ApiClientError, fetchAuthConfig } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -94,8 +94,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
     gsi.renderButton(googleBtnRef.current, {
       theme: 'outline',
       size: 'large',
-      width: 360,
       text: mode === 'signup' ? 'signup_with' : 'signin_with',
+      shape: 'rectangular',
+      logo_alignment: 'left',
     });
     setGoogleButtonRendered(true);
   }, [isOpen, googleClientId, mode, loginWithGoogle, onClose]);
