@@ -37,8 +37,8 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     severity: 'Critical',
     severityUk: 'Критичний ризик',
     severityEn: 'Critical Risk',
-    summaryUk: 'Оплата через 90 днів без авансу та без права зупинки робіт',
-    summaryEn: 'Net 90 payment window with no advance or right to pause',
+    summaryUk: 'Net 90 днів без авансу та пені',
+    summaryEn: 'Net 90 payment window with no advance or pause rights',
     excerptUk:
       '«Оплата наданих Послуг здійснюється Замовником протягом 90 (дев\'яноста) банківських днів після підписання Акта прийому-передачі без нарахування штрафних санкцій.»',
     excerptEn:
@@ -60,14 +60,14 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     severity: 'Critical',
     severityUk: 'Критичний ризик',
     severityEn: 'Critical Risk',
-    summaryUk: 'Повне відчуження прав включно з власними бібліотеками та pre-existing кодом',
-    summaryEn: 'Complete assignment of pre-existing boilerplate, tools and frameworks',
+    summaryUk: 'Відчуження pre-existing коду та бібліотек',
+    summaryEn: 'Assignment of reusable tools and pre-existing code',
     excerptUk:
       '«Усі результати робіт, включно з попередніми бібліотеками, утилітами та напрацюваннями Виконавця, переходять у виключну власність Замовника з моменту створення.»',
     excerptEn:
       '“All work product, including Contractor\'s pre-existing software tools, frameworks, and reusable libraries, shall become sole Client property upon creation.”',
     riskNoteUk:
-      'Ви юридично втрачаєте право повторно використовувати власний код, скрипти та модулі для інших проєктів. Ризик звинувачень у порушенні прав на свій же код.',
+      'Ви юридично втрачаєте право повторно використовувати власний код, скрипти та модулі для інших проєктів. Ризик претензій від клієнта на ваш же базовий стек.',
     riskNoteEn:
       'You permanently surrender rights to your own foundational tooling, preventing reuse in future client engagements.',
     fixUk:
@@ -83,8 +83,8 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     severity: 'Medium',
     severityUk: 'Помірний ризик',
     severityEn: 'Medium Risk',
-    summaryUk: 'Необмежена матеріальна відповідальність ФОП за будь-якими збитками',
-    summaryEn: 'Uncapped liability exposing personal assets to unlimited damage claims',
+    summaryUk: 'Необмежена матеріальна відповідальність ФОП',
+    summaryEn: 'Uncapped liability exposing personal assets',
     excerptUk:
       '«Відповідальність Виконавця за цим Договором є необмеженою за будь-якими вимогами Замовника чи третіх осіб, включно з упущеною вигодою.»',
     excerptEn:
@@ -106,8 +106,8 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     severity: 'Medium',
     severityUk: 'Помірний ризик',
     severityEn: 'Medium Risk',
-    summaryUk: 'Безлімітні безкоштовні доопрацювання до повного затвердження клієнтом',
-    summaryEn: 'Unlimited revisions with no cap until client is fully satisfied',
+    summaryUk: 'Безлімітні правки без доплати (Scope creep)',
+    summaryEn: 'Unlimited revisions with no cap until client is satisfied',
     excerptUk:
       '«Виконавець зобов\'язується вносити всі зміни та корективи за запитом Замовника без обмеження кількості раундів до остаточного погодження.»',
     excerptEn:
@@ -127,10 +127,10 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     titleUk: 'Одностороннє розірвання',
     titleEn: 'Termination Terms',
     severity: 'Low',
-    severityUk: 'Низький ризик',
-    severityEn: 'Low Risk',
-    summaryUk: 'Асиметричний строк: Замовник розриває день-у-день, ФОП — за 60 днів',
-    summaryEn: 'Asymmetric exit: Client cancels immediately, Contractor must provide 60-day notice',
+    severityUk: 'В межах норми',
+    severityEn: 'Standard Risk',
+    summaryUk: 'Асиметричний строк розриву: 0 vs 60 днів',
+    summaryEn: 'Asymmetric exit: Client cancels immediately, Contractor owes 60 days',
     excerptUk:
       '«Замовник має право розірвати цей Договір в односторонньому порядку негайно. Виконавець зобов\'язаний надати письмове повідомлення за 60 (шістдесят) днів.»',
     excerptEn:
@@ -152,8 +152,8 @@ export const SAMPLE_CLAUSES: SampleClauseItem[] = [
     severity: 'Low',
     severityUk: 'В межах норми',
     severityEn: 'Standard / Neutral',
-    summaryUk: 'Право штату Делавер (США) та арбітраж AAA',
-    summaryEn: 'Delaware state law (USA) with American Arbitration Association rules',
+    summaryUk: 'Штат Делавер (США), арбітраж AAA',
+    summaryEn: 'Delaware law (USA) with American Arbitration Association rules',
     excerptUk:
       '«Цей Договір регулюється законодавством штату Делавер, США. Усі спори вирішуються в арбітражі за правилами AAA англійською мовою.»',
     excerptEn:
@@ -188,156 +188,180 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const severityBadge = (sev: SampleClauseItem['severity'], ukLabel: string, enLabel: string) => {
+  // 3 Distinct Color Themes:
+  // 1. Critical: Signal Orange (#F26419) - Brand color from the site
+  // 2. Medium: Royal Blue (#2563EB) - Distinct contrasting 3rd color
+  // 3. Low: Forest Green (#18322B) - Brand color from the site
+  const getTheme = (sev: SampleClauseItem['severity']) => {
     if (sev === 'Critical') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
-          <AlertCircle className="h-3 w-3 text-rose-600" aria-hidden="true" />
-          <span>{isUk ? ukLabel : enLabel}</span>
-        </span>
-      );
+      return {
+        cardBorder: 'border-l-4 border-l-signal',
+        badgeClass: 'border border-signal/40 bg-signal/10 text-signal font-bold',
+        dotClass: 'bg-signal',
+        activeRing: 'ring-2 ring-signal/30 border-signal/50 bg-signal/[0.03]',
+        quoteBorder: 'border-l-4 border-signal bg-signal/[0.03]',
+        icon: AlertCircle,
+        labelUk: 'Критично',
+        labelEn: 'Critical',
+      };
     }
     if (sev === 'Medium') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
-          <AlertTriangle className="h-3 w-3 text-amber-600" aria-hidden="true" />
-          <span>{isUk ? ukLabel : enLabel}</span>
-        </span>
-      );
+      return {
+        cardBorder: 'border-l-4 border-l-blue-600',
+        badgeClass: 'border border-blue-200 bg-blue-50 text-blue-700 font-bold',
+        dotClass: 'bg-blue-600',
+        activeRing: 'ring-2 ring-blue-500/30 border-blue-500/50 bg-blue-500/[0.03]',
+        quoteBorder: 'border-l-4 border-blue-600 bg-blue-50/40',
+        icon: AlertTriangle,
+        labelUk: 'Помірно',
+        labelEn: 'Medium',
+      };
     }
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-        <CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" />
-        <span>{isUk ? ukLabel : enLabel}</span>
-      </span>
-    );
+    return {
+      cardBorder: 'border-l-4 border-l-forest',
+      badgeClass: 'border border-forest/30 bg-forest/10 text-forest font-bold',
+      dotClass: 'bg-forest',
+      activeRing: 'ring-2 ring-forest/30 border-forest/50 bg-forest/[0.03]',
+      quoteBorder: 'border-l-4 border-forest bg-forest/[0.03]',
+      icon: CheckCircle2,
+      labelUk: 'В нормі',
+      labelEn: 'Standard',
+    };
   };
 
+  const activeTheme = getTheme(active.severity);
+  const ActiveIcon = activeTheme.icon;
+
   return (
-    <div className="flex flex-col text-ink-primary">
+    <div className="relative flex flex-col text-ink-primary">
+      {/* Top Triple-Color Accent Bar */}
+      <div className="-mx-5 -mt-5 mb-5 h-1.5 bg-gradient-to-r from-signal via-blue-600 to-forest sm:-mx-6 sm:-mt-6" />
+
       {/* Header */}
-      <div className="flex flex-col justify-between gap-2 border-b border-paper-border pb-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-3 border-b border-paper-border pb-4 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded bg-forest/10 text-forest">
-              <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-forest text-white shadow-xs">
+              <FileText className="h-3 w-3" aria-hidden="true" />
             </span>
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-forest">
-              {isUk ? 'Зразок аудиту договору' : 'Sample Audit Report'}
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-forest">
+              {isUk ? 'Зразок аудиту договору' : 'Sample Contract Audit'}
             </span>
           </div>
-          <h2 className="mt-1 font-display text-base font-bold text-ink-primary sm:text-lg">
-            {isUk
-              ? 'IT Master Services Agreement (MSA)'
-              : 'IT Master Services Agreement (MSA)'}
+          <h2 className="mt-1 font-display text-base font-extrabold text-ink-primary sm:text-lg">
+            IT Master Services Agreement (MSA)
           </h2>
         </div>
 
-        {/* Risk summary pills */}
-        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
-          <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 border border-rose-100">
-            {isUk ? '2 критичні' : '2 critical'}
+        {/* 3 Color Badges: Signal Orange, Royal Blue, Forest Green */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-signal/40 bg-signal/10 px-2.5 py-1 text-xs font-bold text-signal">
+            <span className="h-2 w-2 rounded-full bg-signal" />
+            <span>{isUk ? '2 критичні' : '2 critical'}</span>
           </span>
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 border border-amber-100">
-            {isUk ? '2 помірні' : '2 medium'}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+            <span className="h-2 w-2 rounded-full bg-blue-600" />
+            <span>{isUk ? '2 помірні' : '2 medium'}</span>
           </span>
-          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-100">
-            {isUk ? '2 безпечні' : '2 standard'}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-forest/30 bg-forest/10 px-2.5 py-1 text-xs font-bold text-forest">
+            <span className="h-2 w-2 rounded-full bg-forest" />
+            <span>{isUk ? '2 безпечні' : '2 standard'}</span>
           </span>
         </div>
       </div>
 
-      {/* Clause selector list */}
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {/* 6 Structured Clause Cards with Distinct Color Borders */}
+      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {SAMPLE_CLAUSES.map((item) => {
           const isSelected = item.id === active.id;
+          const theme = getTheme(item.severity);
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => setSelectedId(item.id)}
-              className={`group flex items-center justify-between rounded-lg border p-2.5 text-left transition-all ${
+              className={`group flex items-center justify-between rounded-lg border p-3 text-left transition-all ${
+                theme.cardBorder
+              } ${
                 isSelected
-                  ? 'border-forest bg-paper/70 shadow-xs ring-1 ring-forest/20'
+                  ? `${theme.activeRing} shadow-sm font-semibold`
                   : 'border-paper-border bg-white hover:border-paper-strong hover:bg-paper/30'
               }`}
             >
               <div className="min-w-0 pr-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-xs font-semibold text-ink-secondary">
+                  <span className="font-mono text-xs font-bold text-ink-primary">
                     {item.clause}
                   </span>
-                  <span className="truncate text-xs font-semibold text-ink-primary">
+                  <span className="truncate text-xs font-bold text-ink-primary">
                     {isUk ? item.titleUk : item.titleEn}
                   </span>
                 </div>
-                <p className="mt-0.5 truncate text-[11px] text-ink-muted">
+                <p className="mt-0.5 text-[11px] text-ink-secondary">
                   {isUk ? item.summaryUk : item.summaryEn}
                 </p>
               </div>
 
+              {/* Status pill with color theme */}
               <div className="shrink-0">
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${
-                    item.severity === 'Critical'
-                      ? 'bg-rose-500'
-                      : item.severity === 'Medium'
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
-                  }`}
-                  title={isUk ? item.severityUk : item.severityEn}
-                />
+                <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${theme.badgeClass}`}>
+                  {isUk ? theme.labelUk : theme.labelEn}
+                </span>
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* Active Clause Inspection Card */}
-      <div className="mt-4 rounded-xl border border-paper-border bg-paper/40 p-4">
+      {/* Framed Inspection Card for Selected Clause */}
+      <div className="mt-5 rounded-xl border-2 border-paper-strong/80 bg-white p-4 shadow-xs sm:p-5">
         {/* Inspection Header */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-paper-border pb-3">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-forest">
+            <span className="font-mono text-sm font-extrabold text-forest">
               {active.clause}
             </span>
-            <span className="text-xs font-bold text-ink-primary">
+            <span className="text-sm font-bold text-ink-primary">
               {isUk ? active.titleUk : active.titleEn}
             </span>
           </div>
-          {severityBadge(active.severity, active.severityUk, active.severityEn)}
+
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ${activeTheme.badgeClass}`}>
+            <ActiveIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{isUk ? active.severityUk : active.severityEn}</span>
+          </span>
         </div>
 
-        {/* Document Excerpt */}
-        <div className="mt-3">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+        {/* Document Excerpt in Distinct Quote Box */}
+        <div className="mt-3.5">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-muted">
             {isUk ? 'Оригінальний пункт договору:' : 'Original contract excerpt:'}
           </span>
-          <div className="mt-1 rounded-md border-l-2 border-signal bg-white p-3 font-serif text-xs italic text-ink-secondary shadow-xs">
+          <div className={`mt-1.5 rounded-r-lg p-3.5 font-serif text-xs italic text-ink-primary shadow-xs ${activeTheme.quoteBorder}`}>
             {isUk ? active.excerptUk : active.excerptEn}
           </div>
         </div>
 
         {/* Risk Assessment */}
-        <div className="mt-3">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+        <div className="mt-3.5">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-ink-muted">
             {isUk ? 'Чому це небезпечно для ФОП:' : 'Why this puts the contractor at risk:'}
           </span>
-          <p className="mt-1 text-xs leading-relaxed text-ink-primary">
+          <p className="mt-1 text-xs leading-relaxed text-ink-primary font-medium">
             {isUk ? active.riskNoteUk : active.riskNoteEn}
           </p>
         </div>
 
-        {/* Recommended Counter-Clause */}
-        <div className="mt-3.5 rounded-lg border border-emerald-200/90 bg-emerald-50/70 p-3">
+        {/* Recommended Counter-Clause Box */}
+        <div className="mt-4 rounded-lg border border-forest/20 bg-forest/5 p-3.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-semibold text-emerald-900">
-              {isUk ? 'Рекомендоване формулювання (правка):' : 'Recommended counter-clause:'}
+            <span className="text-[11px] font-bold text-forest">
+              {isUk ? 'Рекомендоване формулювання (безпечна правка):' : 'Recommended counter-clause:'}
             </span>
             <button
               type="button"
               onClick={handleCopyFix}
-              className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 text-[11px] font-medium text-emerald-800 border border-emerald-200 hover:bg-emerald-100/60 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-forest/30 bg-white px-2.5 py-1 text-[11px] font-semibold text-forest shadow-xs transition-colors hover:bg-forest hover:text-white"
             >
               {copied ? (
                 <>
@@ -347,12 +371,12 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
               ) : (
                 <>
                   <Copy className="h-3 w-3" />
-                  <span>{isUk ? 'Скопіювати' : 'Copy'}</span>
+                  <span>{isUk ? 'Скопіювати правку' : 'Copy wording'}</span>
                 </>
               )}
             </button>
           </div>
-          <p className="mt-1 text-xs leading-relaxed text-emerald-950 font-medium">
+          <p className="mt-1.5 text-xs font-semibold leading-relaxed text-forest">
             {isUk ? active.fixUk : active.fixEn}
           </p>
         </div>
@@ -370,7 +394,7 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
           <button
             type="button"
             onClick={onRunSample}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-forest px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-forest-soft sm:self-auto"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-forest px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-forest-soft sm:self-auto"
           >
             <span>{isUk ? 'Відкрити повний звіт' : 'Open full sample report'}</span>
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
