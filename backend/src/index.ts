@@ -6,7 +6,13 @@ import multer from 'multer';
 import { AnalysisError, analyzeContractClauses } from './ai/analyzeContract.js';
 import { SYSTEM_PROMPT } from './ai/prompt.js';
 import { DealContext, DealContextSchema, hasDealContext } from './ai/schema.js';
-import { AuthError, loginUser, signUpUser, verifyJwt } from './auth/authService.js';
+import {
+  AuthError,
+  authenticateWithGoogleIdToken,
+  loginUser,
+  signUpUser,
+  verifyJwt,
+} from './auth/authService.js';
 import {
   BUILDER_SCENARIOS,
   ClauseModuleType,
@@ -257,6 +263,23 @@ export function createApp(options?: { dailyAuditCap?: number }) {
     try {
       const { email = '', password = '' } = req.body ?? {};
       const result = await loginUser(String(email), String(password));
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/api/auth/config', (_req: Request, res: Response) => {
+    res.json({
+      googleEnabled: Boolean(config.googleClientId),
+      googleClientId: config.googleClientId || null,
+    });
+  });
+
+  app.post('/api/auth/google', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const credential = String(req.body?.credential ?? '');
+      const result = await authenticateWithGoogleIdToken(credential);
       res.json(result);
     } catch (err) {
       next(err);

@@ -305,6 +305,10 @@ export const translations = {
       passwordLabel: 'Password (at least 6 characters)',
       signInBtn: 'Sign in',
       signUpBtn: 'Create account',
+      googleBtn: 'Continue with Google',
+      orDivider: 'or with email',
+      googleNotConfigured:
+        'Google Sign-In is ready in code, but requires your Google OAuth Client ID (set GOOGLE_CLIENT_ID in GitHub Actions Variables or .env).',
       switchToSignUp: 'New here? Create a free account',
       switchToSignIn: 'Already have an account? Sign in',
       close: 'Close',
@@ -614,6 +618,10 @@ export const translations = {
       passwordLabel: 'Пароль (мін. 6 символів)',
       signInBtn: 'Увійти',
       signUpBtn: 'Зареєструватися',
+      googleBtn: 'Продовжити з Google',
+      orDivider: 'або через email',
+      googleNotConfigured:
+        'Вхід через Google готовий у коді, але потребує вашого Google OAuth Client ID (додайте GOOGLE_CLIENT_ID у GitHub Actions Variables або .env).',
       switchToSignUp: 'Немає акаунта? Створити безкоштовно',
       switchToSignIn: 'Вже зареєстровані? Увійти',
       close: 'Закрити',

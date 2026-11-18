@@ -158,3 +158,83 @@ export async function loginUser(
 
   return { token, user: toPublicUser(user) };
 }
+
+export interface GoogleTokenClaims {
+  email: string;
+  email_verified?: string | boolean;
+  name?: string;
+  aud?: string;
+  iss?: string;
+  exp?: string | number;
+}
+
+export type GoogleTokenVerifier = (idToken: string) => Promise<GoogleTokenClaims>;
+
+async function defaultVerifyGoogleIdToken(idToken: string): Promise<GoogleTokenClaims> {
+  const res = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+  );
+  if (!res.ok) {
+    throw new AuthError('Invalid or expired Google credential.', 401);
+  }
+  return (await res.json()) as GoogleTokenClaims;
+}
+
+/**
+ * Signs in or automatically creates a ClauseGuard account using a verified Google ID token.
+ */
+export async function authenticateWithGoogleIdToken(
+  idToken: string,
+  verifier: GoogleTokenVerifier = defaultVerifyGoogleIdToken,
+): Promise<{ token: string; user: PublicUser }> {
+  const trimmed = idToken.trim();
+  if (!trimmed) {
+    throw new AuthError('Missing Google credential token.', 400);
+  }
+
+  const claims = await verifier(trimmed);
+  const emailVerified = claims.email_verified === true || claims.email_verified === 'true';
+  if (!claims.email || !emailVerified) {
+    throw new AuthError('Google account email is missing or unverified.', 401);
+  }
+
+  if (
+    claims.iss &&
+    claims.iss !== 'accounts.google.com' &&
+    claims.iss !== 'https://accounts.google.com'
+  ) {
+    throw new AuthError('Invalid Google token issuer.', 401);
+  }
+
+  if (claims.exp && Number(claims.exp) < Math.floor(Date.now() / 1000)) {
+    throw new AuthError('Google session expired. Please try again.', 401);
+  }
+
+  if (config.googleClientId && claims.aud !== config.googleClientId) {
+    throw new AuthError('Google token audience mismatch.', 401);
+  }
+
+  const normalizedEmail = claims.email.trim().toLowerCase();
+  let user = await findUserByEmail(normalizedEmail);
+
+  if (!user) {
+    const displayName = (claims.name || normalizedEmail.split('@')[0] || 'Google User').trim();
+    user = {
+      id: uuidv4(),
+      name: displayName,
+      email: normalizedEmail,
+      passwordHash: `google-oauth:${crypto.randomBytes(24).toString('hex')}`,
+      createdAt: new Date().toISOString(),
+    };
+    await saveUser(user);
+  }
+
+  const token = signJwt({
+    sub: user.id,
+    email: user.email,
+    name: user.name,
+    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+  });
+
+  return { token, user: toPublicUser(user) };
+}

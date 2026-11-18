@@ -68,5 +68,6 @@ jobs:
           DAILY_AUDIT_CAP: ${{ vars.DAILY_AUDIT_CAP || '50' }}
           BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL || 'adolfvlasiuk@gmail.com' }}
           MONOBANK_JAR_URL: ${{ vars.MONOBANK_JAR_URL || 'https://send.monobank.ua/jar/your-jar-id' }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || '' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: bash infra/deploy.sh

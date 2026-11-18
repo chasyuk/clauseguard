@@ -13,6 +13,7 @@ BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}"
 DAILY_AUDIT_CAP="${DAILY_AUDIT_CAP:-50}"
 BUDGET_ALERT_EMAIL="${BUDGET_ALERT_EMAIL:-adolfvlasiuk@gmail.com}"
 MONOBANK_JAR_URL="${MONOBANK_JAR_URL:-https://send.monobank.ua/jar/your-jar-id}"
+GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 JWT_SECRET="${JWT_SECRET:-$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")}"
 
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
@@ -59,6 +60,7 @@ aws cloudformation deploy \
     "DailyAuditCap=$DAILY_AUDIT_CAP" \
     "BudgetAlertEmail=$BUDGET_ALERT_EMAIL" \
     "MonobankJarUrl=$MONOBANK_JAR_URL" \
+    "GoogleClientId=$GOOGLE_CLIENT_ID" \
     "JwtSecret=$JWT_SECRET"
 
 get_output() {
@@ -79,6 +81,7 @@ DYNAMO_TABLE="$(get_output DynamoTableName)"
 echo "==> 6/6 Building & uploading frontend to s3://$FRONTEND_BUCKET/..."
 VITE_API_URL="$API_ENDPOINT" \
 VITE_MONOBANK_JAR_URL="$MONOBANK_JAR_URL" \
+VITE_GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
   npm --prefix "$FRONTEND_DIR" run build
 
 aws s3 sync "$FRONTEND_DIR/dist/" "s3://$FRONTEND_BUCKET/" --delete --region "$AWS_REGION"

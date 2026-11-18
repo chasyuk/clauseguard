@@ -26,6 +26,10 @@ Parameters:
     Type: String
     Default: https://send.monobank.ua/jar/your-jar-id
     Description: Configurable Monobank Jar URL for optional user donations
+  GoogleClientId:
+    Type: String
+    Default: ""
+    Description: Optional Google OAuth 2.0 Web Client ID for Sign in with Google
 
 Conditions:
   HasBudgetEmail: !Not [!Equals [!Ref BudgetAlertEmail, ""]]
@@ -113,6 +117,7 @@ Resources:
           DAILY_AUDIT_CAP: !Ref DailyAuditCap
           JWT_SECRET: !Ref JwtSecret
           MONOBANK_JAR_URL: !Ref MonobankJarUrl
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref UploadsBucket

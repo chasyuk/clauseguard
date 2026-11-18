@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractText } from 'unpdf';
+import { authenticateWithGoogleIdToken } from '../src/auth/authService.js';
 import { createApp } from '../src/index.js';
 import { resetDailyCapForDate } from '../src/storage/auditStore.js';
 
@@ -158,6 +159,36 @@ async function runTests() {
       analysis: { contextDiscrepancies: Array<{ status: string }> };
     };
     assert.ok(ukAudit.analysis.contextDiscrepancies.some((d) => d.status === 'MISMATCH'));
+
+    console.log('7. Testing Google OAuth config endpoint & Google ID token account creation/login...');
+    const authCfgRes = await fetch(`${baseUrl}/api/auth/config`);
+    assert.equal(authCfgRes.status, 200);
+    const authCfg = (await authCfgRes.json()) as { googleEnabled: boolean };
+    assert.equal(typeof authCfg.googleEnabled, 'boolean');
+
+    const googleAuth1 = await authenticateWithGoogleIdToken('mock-google-id-token', async () => ({
+      email: 'fop.google.user@example.com',
+      email_verified: true,
+      name: 'Google FOP Dev',
+      iss: 'https://accounts.google.com',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }));
+    assert.equal(googleAuth1.user.email, 'fop.google.user@example.com');
+    const meRes = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${googleAuth1.token}` },
+    });
+    assert.equal(meRes.status, 200);
+    const meJson = (await meRes.json()) as { user: { id: string } };
+    assert.equal(meJson.user.id, googleAuth1.user.id);
+
+    const googleAuth2 = await authenticateWithGoogleIdToken('mock-google-id-token-2', async () => ({
+      email: 'fop.google.user@example.com',
+      email_verified: 'true',
+      name: 'Google FOP Dev',
+      iss: 'accounts.google.com',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }));
+    assert.equal(googleAuth2.user.id, googleAuth1.user.id);
 
     console.log('\nALL PHASE 5 TESTS PASSED!');
   } finally {

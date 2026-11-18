@@ -265,3 +265,22 @@ export async function fetchMe(token: string): Promise<{ user: PublicUser }> {
   });
   return handleResponse<{ user: PublicUser }>(res);
 }
+
+export async function fetchAuthConfig(): Promise<{
+  googleEnabled: boolean;
+  googleClientId: string | null;
+}> {
+  const res = await fetch(`${API_BASE}/api/auth/config`);
+  return handleResponse<{ googleEnabled: boolean; googleClientId: string | null }>(res);
+}
+
+export async function signInWithGoogle(
+  credential: string,
+): Promise<{ token: string; user: PublicUser }> {
+  const res = await fetch(`${API_BASE}/api/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ credential }),
+  });
+  return handleResponse<{ token: string; user: PublicUser }>(res);
+}
