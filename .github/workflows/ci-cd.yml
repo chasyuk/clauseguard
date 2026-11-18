@@ -12,9 +12,12 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   test-and-build:
-    name: Build & Verify Phases 1–4
+    name: Build & Verify Phases 1–5
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -31,7 +34,7 @@ jobs:
       - name: Build backend & frontend
         run: npm run build
 
-      - name: Run Phase 1–4 Automated Test Suites
+      - name: Run Phase 1–5 Automated Test Suites
         env:
           BEDROCK_MODE: local
         run: npm run test:all
@@ -42,32 +45,50 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Check AWS secrets configuration
+        id: creds
+        env:
+          AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ]; then
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "AWS stack is deployed via AWS CLI (https://d3clnevtf6tq79.cloudfront.net). Skipping CI re-deploy because repository AWS secrets are not set."
+          fi
+
       - name: Checkout repository
+        if: steps.creds.outputs.has_creds == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node.js 22
+        if: steps.creds.outputs.has_creds == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install dependencies
+        if: steps.creds.outputs.has_creds == 'true'
         run: npm run install:all
 
       - name: Configure AWS credentials
+        if: steps.creds.outputs.has_creds == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-central-1' }}
 
       - name: Deploy Backend, Infrastructure & Frontend to AWS
+        if: steps.creds.outputs.has_creds == 'true'
         env:
-          AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'eu-central-1' }}
           STACK_NAME: clauseguard-mvp
-          BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID || 'amazon.nova-lite-v1:0' }}
+          BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID || 'eu.amazon.nova-lite-v1:0' }}
           DAILY_AUDIT_CAP: ${{ vars.DAILY_AUDIT_CAP || '50' }}
-          BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL || 'adolfvlasiuk@gmail.com' }}
+          BUDGET_ALERT_EMAIL: ${{ secrets.BUDGET_ALERT_EMAIL || '' }}
           MONOBANK_JAR_URL: ${{ vars.MONOBANK_JAR_URL || 'https://send.monobank.ua/jar/8D84Pi88MN' }}
-          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || '' }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || '86038164374-mf9k27iq1dq6iif4a9na44r8pgrqtt6s.apps.googleusercontent.com' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: bash infra/deploy.sh
