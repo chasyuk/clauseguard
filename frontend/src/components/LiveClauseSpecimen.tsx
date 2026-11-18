@@ -162,8 +162,8 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
         })}
       </div>
 
-      {/* Live Interactive Clause Inspector */}
-      <div className="mt-4 rounded-lg border border-forest-border bg-forest-card/60 p-3.5 transition-all">
+      {/* Live Interactive Clause Inspector (Fixed Height) */}
+      <div className="mt-4 flex h-[138px] flex-col justify-between overflow-hidden rounded-lg border border-forest-border bg-forest-card/60 p-3.5 transition-all sm:h-[126px]">
         <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-forest-muted">
           <span>
             {active.clause} · {isUk ? active.labelUk : active.labelEn}
