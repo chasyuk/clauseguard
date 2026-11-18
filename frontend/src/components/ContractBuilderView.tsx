@@ -165,8 +165,8 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
   return (
     <div className="space-y-6">
       {/* Builder Configuration Card */}
-      <section className="border border-surface-strong bg-surface-card">
-        <div className="border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
+      <section className="overflow-hidden rounded-lg border border-surface-border bg-surface-card">
+        <div className="border-b border-surface-border bg-surface-subtle px-4 py-2.5">
           <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
             {t.builder.sectionTitle}
           </h2>
@@ -189,17 +189,17 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                       setSelectedTemplateId(tpl.templateId);
                       setSelectedClauseIds({});
                     }}
-                    className={`flex flex-col justify-between border p-3.5 text-left transition-colors ${
+                    className={`flex flex-col justify-between rounded-md border p-3.5 text-left transition-colors ${
                       selected
-                        ? 'border-brand bg-brand-subtle'
+                        ? 'border-brand bg-brand-subtle/40'
                         : 'border-surface-border bg-surface-bg hover:border-surface-strong'
                     }`}
                   >
                     <div>
-                      <span className="inline-block border border-surface-border bg-surface-card px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                      <span className="inline-block rounded-sm border border-surface-border bg-surface-card px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                         {tpl.templateId}
                       </span>
-                      <h3 className="mt-2 text-sm font-semibold text-ink-primary">
+                      <h3 className="mt-2 text-sm font-semibold text-white">
                         {isUk ? tpl.titleUk : tpl.titleEn}
                       </h3>
                       <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
@@ -234,7 +234,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                       key={sc.id}
                       type="button"
                       onClick={() => handleLoadScenario(sc.id)}
-                      className="border border-surface-border bg-surface-bg px-2 py-1 font-mono text-[11px] font-medium text-ink-primary transition-colors hover:border-brand hover:text-brand"
+                      className="rounded-md border border-surface-border bg-surface-bg px-2 py-1 font-mono text-[11px] font-medium text-ink-primary transition-colors hover:border-brand hover:text-brand-text"
                     >
                       {isUk ? sc.labelUk : sc.labelEn}
                     </button>
@@ -249,7 +249,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
               value={plainText}
               onChange={(e) => setPlainText(e.target.value)}
               placeholder={t.builder.plainTextPlaceholder}
-              className="mt-2 w-full border border-surface-strong bg-surface-bg p-3 text-sm leading-relaxed text-ink-primary focus:border-brand focus:outline-none"
+              className="mt-2 w-full rounded-md border border-surface-border bg-surface-bg p-3 text-sm leading-relaxed text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
             />
           </div>
 
@@ -260,7 +260,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.builder.languageLabel}
                 </p>
-                <div className="mt-1.5 inline-flex border border-surface-strong bg-surface-bg">
+                <div className="mt-1.5 inline-flex overflow-hidden rounded-md border border-surface-border bg-surface-bg">
                   {(['en', 'uk', 'bilingual'] as BuilderLanguage[]).map((opt) => (
                     <button
                       key={opt}
@@ -268,8 +268,8 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                       onClick={() => setContractLanguage(opt)}
                       className={`border-r border-surface-border px-3 py-1.5 font-mono text-xs font-medium last:border-r-0 ${
                         contractLanguage === opt
-                          ? 'bg-surface-strong text-white'
-                          : 'text-ink-secondary hover:bg-surface-subtle'
+                          ? 'bg-surface-subtle text-white'
+                          : 'text-ink-muted hover:text-ink-primary'
                       }`}
                     >
                       {t.builder.langOptions[opt]}
@@ -282,7 +282,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.builder.postureLabel}
                 </p>
-                <div className="mt-1.5 inline-flex border border-surface-strong bg-surface-bg">
+                <div className="mt-1.5 inline-flex overflow-hidden rounded-md border border-surface-border bg-surface-bg">
                   <button
                     type="button"
                     onClick={() => {
@@ -292,7 +292,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     className={`border-r border-surface-border px-3 py-1.5 font-mono text-xs font-medium ${
                       posture === 'CONTRACTOR_PROTECTIVE'
                         ? 'bg-brand text-white'
-                        : 'text-ink-secondary hover:bg-surface-subtle'
+                        : 'text-ink-muted hover:text-ink-primary'
                     }`}
                   >
                     {t.builder.postureProtective}
@@ -305,8 +305,8 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     }}
                     className={`px-3 py-1.5 font-mono text-xs font-medium ${
                       posture === 'BALANCED'
-                        ? 'bg-surface-strong text-white'
-                        : 'text-ink-secondary hover:bg-surface-subtle'
+                        ? 'bg-surface-subtle text-white'
+                        : 'text-ink-muted hover:text-ink-primary'
                     }`}
                   >
                     {t.builder.postureBalanced}
@@ -323,7 +323,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   overrideParams: undefined,
                 })
               }
-              className="inline-flex items-center justify-center gap-2 border border-brand bg-brand px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-brand-hover disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-2.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 disabled:opacity-50"
             >
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               <span>{isLoading ? t.builder.assemblingBtn : t.builder.assembleBtn}</span>
@@ -333,7 +333,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2.5 border border-risk-highBorder bg-risk-highBg px-4 py-3 text-xs text-risk-highText"
+              className="flex items-start gap-2.5 rounded-md border border-risk-highBorder bg-risk-highBg px-4 py-3 text-xs text-risk-highText"
             >
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{error}</span>
@@ -347,7 +347,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
         <div className="space-y-6">
           {/* Omitted-Term Warnings */}
           {assembled.omittedWarnings.length > 0 && (
-            <section className="border border-risk-medBorder bg-risk-medBg p-4">
+            <section className="rounded-lg border border-risk-medBorder bg-risk-medBg p-4">
               <div className="flex items-start gap-2.5">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-risk-medText" aria-hidden="true" />
                 <div className="w-full">
@@ -359,13 +359,13 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                     {assembled.omittedWarnings.map((w) => (
                       <div
                         key={w.field}
-                        className="border border-risk-medBorder bg-surface-card p-3"
+                        className="rounded-md border border-risk-medBorder bg-surface-card p-3"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-ink-primary">
+                          <span className="text-xs font-semibold text-white">
                             {isUk ? w.titleUk : w.titleEn}
                           </span>
-                          <span className="border border-brand bg-brand-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                          <span className="rounded-sm border border-brand/50 bg-brand-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                             {w.appliedDefaultClauseId}
                           </span>
                         </div>
@@ -381,16 +381,16 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
           )}
 
           {/* Editable Extracted Parameters Strip */}
-          <section className="border border-surface-strong bg-surface-card p-4 sm:p-5">
+          <section className="rounded-lg border border-surface-border bg-surface-card p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-3">
-              <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
+              <h3 className="font-mono text-xs font-semibold uppercase tracking-wider text-white">
                 {t.builder.paramsTitle}
               </h3>
               <button
                 type="button"
                 disabled={isLoading}
                 onClick={() => void runAssembly({ overrideParams: paramDraft })}
-                className="inline-flex items-center gap-1.5 border border-surface-strong bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:bg-brand hover:text-white"
+                className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-surface-strong"
               >
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{t.builder.applyParamsBtn}</span>
@@ -426,7 +426,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                         [field]: inputType === 'number' ? Number(e.target.value) : e.target.value,
                       }))
                     }
-                    className="mt-1 w-full border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                    className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-white focus:border-brand focus:outline-none"
                   />
                 </div>
               ))}
@@ -440,7 +440,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   onChange={(e) =>
                     setParamDraft((prev) => ({ ...prev, exclusions: e.target.value }))
                   }
-                  className="mt-1 w-full border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-ink-primary focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-2.5 py-1.5 text-xs text-white focus:border-brand focus:outline-none"
                 />
               </div>
             </div>
@@ -448,17 +448,17 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
 
           {/* Action Toolbar + Assembled Clauses */}
           <section className="space-y-4">
-            <div className="flex flex-col justify-between gap-3 border-b border-surface-strong pb-4 sm:flex-row sm:items-end">
+            <div className="flex flex-col justify-between gap-3 border-b border-surface-border pb-4 sm:flex-row sm:items-end">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="border border-brand bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                  <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                     {assembled.templateId}
                   </span>
                   <span className="font-mono text-[11px] text-ink-muted">
                     {t.builder.sourceEngine}: {assembled.modelId}
                   </span>
                 </div>
-                <h2 className="mt-1.5 font-serif text-xl font-semibold text-ink-primary sm:text-2xl">
+                <h2 className="mt-1.5 font-display text-xl font-bold text-white sm:text-2xl">
                   {t.builder.assembledTitle}: {assembled.templateTitle}
                 </h2>
               </div>
@@ -467,7 +467,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 <button
                   type="button"
                   onClick={() => void copyWithFeedback('full-contract', assembled.fullContractText)}
-                  className="inline-flex items-center gap-1.5 border border-surface-strong bg-surface-card px-3 py-2 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-card px-3 py-2 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong"
                 >
                   {copiedKey === 'full-contract' ? (
                     <>
@@ -486,7 +486,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   type="button"
                   disabled={exportingType !== null}
                   onClick={() => void handleDownload('docx')}
-                  className="inline-flex items-center gap-1.5 border border-brand bg-brand px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-hover disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-3.5 py-2 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 disabled:opacity-60"
                 >
                   {exportingType === 'docx' ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -500,7 +500,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                   type="button"
                   disabled={exportingType !== null}
                   onClick={() => void handleDownload('pdf')}
-                  className="inline-flex items-center gap-1.5 border border-surface-strong bg-surface-card px-3.5 py-2 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3.5 py-2 text-xs font-medium text-white transition-colors hover:border-surface-strong disabled:opacity-60"
                 >
                   {exportingType === 'pdf' ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -517,17 +517,15 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
               {assembled.sections.map((section, idx) => (
                 <article
                   key={section.module}
-                  className="border border-surface-strong bg-surface-card"
+                  className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border bg-surface-subtle px-4 py-2.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="border border-surface-strong bg-surface-card px-2 py-0.5 font-mono text-xs font-semibold text-ink-primary">
+                      <span className="rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-white">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
-                      <span className="text-xs font-semibold text-ink-primary">
-                        {section.title}
-                      </span>
-                      <span className="border border-brand bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                      <span className="text-xs font-semibold text-white">{section.title}</span>
+                      <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                         {section.selectedClauseId}
                       </span>
                     </div>
@@ -544,10 +542,10 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                             key={alt.clauseId}
                             type="button"
                             onClick={() => handleSwapClauseVariant(section.module, alt.clauseId)}
-                            className={`border px-2 py-0.5 font-mono text-[10px] font-medium transition-colors ${
+                            className={`rounded-sm border px-2 py-0.5 font-mono text-[10px] font-medium transition-colors ${
                               active
                                 ? 'border-brand bg-brand text-white'
-                                : 'border-surface-border bg-surface-card text-ink-secondary hover:border-surface-strong'
+                                : 'border-surface-border bg-surface-bg text-ink-secondary hover:border-surface-strong'
                             }`}
                           >
                             {alt.posture === 'CONTRACTOR_PROTECTIVE'
@@ -561,13 +559,13 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
 
                   <div className="grid grid-cols-1 divide-y divide-surface-border lg:grid-cols-12 lg:divide-x lg:divide-y-0">
                     <div className="p-4 lg:col-span-8">
-                      <p className="whitespace-pre-line font-serif text-[13.5px] leading-relaxed text-ink-primary">
+                      <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-primary">
                         {section.renderedText}
                       </p>
                     </div>
                     <div className="flex flex-col justify-between bg-surface-bg p-4 lg:col-span-4">
                       <div>
-                        <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand">
+                        <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand-text">
                           {t.builder.rationalePrefix}
                         </span>
                         <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
@@ -577,7 +575,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                       <button
                         type="button"
                         onClick={() => void copyWithFeedback(section.module, section.renderedText)}
-                        className="mt-3 inline-flex items-center justify-center gap-1.5 border border-surface-strong bg-surface-card px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
+                        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-surface-strong"
                       >
                         {copiedKey === section.module ? (
                           <>
@@ -598,11 +596,11 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
             </div>
 
             {/* Collapsible Full Assembled Document */}
-            <div className="border border-surface-border bg-surface-card">
+            <div className="overflow-hidden rounded-lg border border-surface-border bg-surface-card">
               <button
                 type="button"
                 onClick={() => setShowFullPreview((p) => !p)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs font-semibold text-ink-secondary hover:bg-surface-subtle"
+                className="flex w-full items-center justify-between px-4 py-3 text-left font-mono text-xs font-semibold text-ink-secondary hover:bg-surface-subtle hover:text-white"
               >
                 <span>
                   {showFullPreview ? t.builder.hideFullPreviewToggle : t.builder.fullPreviewToggle}
@@ -614,7 +612,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
                 )}
               </button>
               {showFullPreview && (
-                <pre className="whitespace-pre-wrap border-t border-surface-border bg-surface-bg p-5 font-serif text-xs leading-relaxed text-ink-primary">
+                <pre className="whitespace-pre-wrap border-t border-surface-border bg-surface-bg p-5 font-mono text-xs leading-relaxed text-ink-primary">
                   {assembled.fullContractText}
                 </pre>
               )}

@@ -60,15 +60,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink-primary/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="auth-modal-title"
     >
-      <div className="w-full max-w-md border border-surface-strong bg-surface-card p-6">
+      <div className="w-full max-w-md rounded-lg border border-surface-strong bg-surface-card p-6">
         <div className="flex items-start justify-between border-b border-surface-border pb-3">
           <div>
-            <h2 id="auth-modal-title" className="font-serif text-lg font-semibold text-ink-primary">
+            <h2 id="auth-modal-title" className="font-display text-lg font-bold text-white">
               {mode === 'signup' ? t.auth.signUpTitle : t.auth.signInTitle}
             </h2>
             <p className="mt-0.5 text-xs text-ink-muted">{t.auth.subtitle}</p>
@@ -77,7 +77,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
             type="button"
             onClick={onClose}
             aria-label={t.auth.close}
-            className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-subtle hover:text-ink-primary"
+            className="rounded-md p-1 text-ink-muted transition-colors hover:bg-surface-subtle hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -95,7 +95,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded border border-surface-border bg-surface-bg px-3 py-2 text-sm text-ink-primary"
+                className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
               />
             </div>
           )}
@@ -110,7 +110,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded border border-surface-border bg-surface-bg px-3 py-2 text-sm text-ink-primary"
+              className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
             />
           </div>
 
@@ -125,14 +125,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded border border-surface-border bg-surface-bg px-3 py-2 text-sm text-ink-primary"
+              className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
             />
           </div>
 
           {error && (
             <div
               role="alert"
-              className="rounded border border-risk-highBorder bg-risk-highBg px-3 py-2 text-xs text-risk-highText"
+              className="rounded-md border border-risk-highBorder bg-risk-highBg px-3 py-2 text-xs text-risk-highText"
             >
               {error}
             </div>
@@ -141,7 +141,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover disabled:opacity-60"
+            className="w-full rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200 disabled:opacity-60"
           >
             {submitting
               ? '...'
@@ -158,7 +158,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               setMode(mode === 'signup' ? 'login' : 'signup');
               setError(null);
             }}
-            className="text-xs font-medium text-brand hover:underline"
+            className="text-xs font-medium text-brand-text hover:underline"
           >
             {mode === 'signup' ? t.auth.switchToSignIn : t.auth.switchToSignUp}
           </button>

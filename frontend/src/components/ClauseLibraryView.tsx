@@ -41,7 +41,7 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
   return (
     <div className="space-y-8">
       <div className="border-b border-surface-border pb-4">
-        <h2 className="font-serif text-2xl font-semibold text-ink-primary">{t.library.heading}</h2>
+        <h2 className="font-display text-2xl font-bold text-white">{t.library.heading}</h2>
         <p className="mt-1 max-w-3xl text-sm text-ink-secondary">{t.library.subtitle}</p>
       </div>
 
@@ -54,18 +54,18 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
           {catalog?.templates.map((tpl) => (
             <article
               key={tpl.templateId}
-              className="flex flex-col justify-between border border-surface-strong bg-surface-card p-5"
+              className="flex flex-col justify-between rounded-lg border border-surface-border bg-surface-card p-5"
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="border border-brand bg-brand-subtle px-2 py-0.5 font-mono text-[11px] font-semibold text-brand">
+                  <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-text">
                     {tpl.templateId}
                   </span>
                   <span className="font-mono text-[11px] text-ink-muted">
                     {tpl.modules.length} {isUk ? 'модулів' : 'modules'}
                   </span>
                 </div>
-                <h4 className="mt-2.5 font-serif text-lg font-semibold text-ink-primary">
+                <h4 className="mt-2.5 font-display text-lg font-bold text-white">
                   {isUk ? tpl.titleUk : tpl.titleEn}
                 </h4>
                 <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
@@ -78,7 +78,7 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
               <button
                 type="button"
                 onClick={() => onUseTemplate(tpl.templateId)}
-                className="mt-4 inline-flex items-center justify-center gap-1.5 border border-brand bg-brand px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
+                className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-md bg-white px-4 py-2 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
               >
                 <span>{t.library.useTemplateBtn}</span>
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -99,7 +99,7 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
             value={selectedModule}
             onChange={(e) => setSelectedModule(e.target.value as ClauseModuleType | 'ALL')}
             aria-label={t.library.clausesTitle}
-            className="border border-surface-strong bg-surface-card px-3 py-1.5 font-mono text-xs text-ink-primary focus:border-brand focus:outline-none"
+            className="rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-xs text-white focus:border-brand focus:outline-none"
           >
             <option value="ALL">{t.library.filterAll}</option>
             {catalog &&
@@ -113,21 +113,24 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
 
         <div className="space-y-4">
           {filteredClauses.map((clause) => (
-            <article key={clause.clauseId} className="border border-surface-strong bg-surface-card">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
+            <article
+              key={clause.clauseId}
+              className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border bg-surface-subtle px-4 py-2.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="border border-brand bg-brand-subtle px-2 py-0.5 font-mono text-[11px] font-semibold text-brand">
+                  <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-text">
                     {clause.clauseId}
                   </span>
-                  <span className="text-xs font-semibold text-ink-primary">
+                  <span className="text-xs font-semibold text-white">
                     {isUk ? clause.titleUk : clause.titleEn}
                   </span>
                 </div>
                 <span
-                  className={`border px-2 py-0.5 font-mono text-[10px] font-semibold ${
+                  className={`rounded-sm border px-2 py-0.5 font-mono text-[10px] font-semibold ${
                     clause.posture === 'CONTRACTOR_PROTECTIVE'
-                      ? 'border-brand bg-brand text-white'
-                      : 'border-surface-strong bg-surface-card text-ink-primary'
+                      ? 'border-brand/50 bg-brand-subtle text-brand-text'
+                      : 'border-surface-strong bg-surface-bg text-ink-secondary'
                   }`}
                 >
                   {clause.posture === 'CONTRACTOR_PROTECTIVE'
@@ -142,14 +145,14 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
                     <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                       ENGLISH TEXT
                     </span>
-                    <p className="mt-2 whitespace-pre-line font-serif text-xs leading-relaxed text-ink-primary">
+                    <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-ink-primary">
                       {clause.templateEn}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => void copyText(`${clause.clauseId}-en`, clause.templateEn)}
-                    className="mt-3 inline-flex w-fit items-center gap-1.5 border border-surface-border bg-surface-bg px-2.5 py-1 text-xs font-medium text-ink-primary hover:border-surface-strong"
+                    className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-md border border-surface-border bg-surface-bg px-2.5 py-1 text-xs font-medium text-ink-primary hover:border-surface-strong"
                   >
                     {copiedKey === `${clause.clauseId}-en` ? (
                       <Check className="h-3.5 w-3.5 text-risk-lowText" aria-hidden="true" />
@@ -165,14 +168,14 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
                     <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                       УКРАЇНСЬКИЙ ТЕКСТ
                     </span>
-                    <p className="mt-2 whitespace-pre-line font-serif text-xs leading-relaxed text-ink-primary">
+                    <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-ink-primary">
                       {clause.templateUk}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => void copyText(`${clause.clauseId}-uk`, clause.templateUk)}
-                    className="mt-3 inline-flex w-fit items-center gap-1.5 border border-surface-border bg-surface-bg px-2.5 py-1 text-xs font-medium text-ink-primary hover:border-surface-strong"
+                    className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-md border border-surface-border bg-surface-bg px-2.5 py-1 text-xs font-medium text-ink-primary hover:border-surface-strong"
                   >
                     {copiedKey === `${clause.clauseId}-uk` ? (
                       <Check className="h-3.5 w-3.5 text-risk-lowText" aria-hidden="true" />
@@ -185,7 +188,7 @@ export const ClauseLibraryView: React.FC<ClauseLibraryViewProps> = ({ onUseTempl
               </div>
 
               <div className="border-t border-surface-border bg-surface-bg px-4 py-2 text-xs text-ink-secondary">
-                <strong className="font-mono text-[10px] uppercase text-brand">
+                <strong className="font-mono text-[10px] uppercase text-brand-text">
                   {t.builder.rationalePrefix}{' '}
                 </strong>
                 {isUk ? clause.rationaleUk : clause.rationaleEn}

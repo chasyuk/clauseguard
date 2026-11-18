@@ -27,7 +27,7 @@ export const RiskBadge: React.FC<RiskBadgeProps> = ({ level }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${BADGE_CLASSES[level]}`}
+      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${BADGE_CLASSES[level]}`}
     >
       {icon}
       <span>{t.extraction.severityLabels[level]}</span>

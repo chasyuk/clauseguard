@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { fetchAuditById, fetchMyAudits } from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ClauseLibraryView } from './components/ClauseLibraryView';
 import { ContractBuilderView } from './components/ContractBuilderView';
 import { DonationModal } from './components/DonationModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
-import { Navbar } from './components/Navbar';
+import { Navbar, WorkspaceMode } from './components/Navbar';
 import { ResultsView } from './components/ResultsView';
 import { UploadZone } from './components/UploadZone';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -23,8 +23,10 @@ function readAuditIdFromUrl(): string | null {
 }
 
 const MainShell: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, token } = useAuth();
+  const workspaceRef = useRef<HTMLDivElement>(null);
+
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'signup' }>({
     open: false,
     mode: 'login',
@@ -34,7 +36,7 @@ const MainShell: React.FC = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLoadError, setAuditLoadError] = useState(false);
   const [recentAudits, setRecentAudits] = useState<AuditSummaryItem[]>([]);
-  const [workspaceMode, setWorkspaceMode] = useState<'builder' | 'auditor' | 'library'>('builder');
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('builder');
   const [builderTemplateOverride, setBuilderTemplateOverride] = useState<string | undefined>(
     undefined,
   );
@@ -53,7 +55,6 @@ const MainShell: React.FC = () => {
     }
   };
 
-  // Load audit directly when user opens a shared ?audit=<uuid> or /audits/<uuid> link
   useEffect(() => {
     const urlAuditId = readAuditIdFromUrl();
     if (urlAuditId) {
@@ -73,7 +74,6 @@ const MainShell: React.FC = () => {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Load signed-in user's recent 24h audits
   useEffect(() => {
     if (!token || !user) {
       setRecentAudits([]);
@@ -96,30 +96,47 @@ const MainShell: React.FC = () => {
   const resetToUpload = () => {
     setActiveRecord(null);
     setAuditLoadError(false);
+    setWorkspaceMode('auditor');
     if (window.location.search || window.location.pathname !== '/') {
       window.history.pushState({}, '', '/');
     }
   };
 
+  const jumpToMode = (mode: WorkspaceMode) => {
+    setActiveRecord(null);
+    setAuditLoadError(false);
+    setWorkspaceMode(mode);
+    if (window.location.search || window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+    window.setTimeout(() => {
+      workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 30);
+  };
+
+  const isUk = lang === 'uk';
+
   return (
     <div className="flex min-h-screen flex-col bg-surface-bg text-ink-primary">
       <Navbar
+        activeMode={activeRecord ? 'auditor' : workspaceMode}
+        onSelectMode={jumpToMode}
         onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
         onOpenDonate={() => setDonateOpen(true)}
       />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
         {loadingAudit ? (
-          <div className="flex items-center justify-center border border-surface-strong bg-surface-card p-12 text-sm font-medium text-brand">
+          <div className="flex items-center justify-center rounded-lg border border-surface-border bg-surface-card p-12 text-sm font-medium text-brand-text">
             <Loader2 className="mr-2.5 h-5 w-5 animate-spin" aria-hidden="true" />
             <span>{t.auditNotFound.loading}</span>
           </div>
         ) : auditLoadError ? (
-          <div className="border border-surface-strong bg-surface-card p-8">
+          <div className="rounded-lg border border-surface-border bg-surface-card p-8">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-risk-highText" aria-hidden="true" />
               <div>
-                <h1 className="font-serif text-xl font-semibold text-ink-primary">
+                <h1 className="font-display text-xl font-bold text-white">
                   {t.auditNotFound.title}
                 </h1>
                 <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-secondary">
@@ -128,7 +145,7 @@ const MainShell: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetToUpload}
-                  className="mt-4 inline-flex items-center gap-2 border border-surface-strong bg-brand px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
+                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{t.auditNotFound.backBtn}</span>
@@ -137,50 +154,198 @@ const MainShell: React.FC = () => {
             </div>
           </div>
         ) : !activeRecord ? (
-          <div className="space-y-8">
-            {/* Title + 1-2-3 Step Bar */}
-            <div className="space-y-6 border-b border-surface-border pb-6">
-              <div className="max-w-3xl space-y-2.5">
-                <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-brand">
-                  {t.workspace.eyebrow}
-                </p>
-                <h1 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-ink-primary sm:text-4xl">
-                  {t.workspace.title}
-                </h1>
-                <p className="text-sm leading-relaxed text-ink-secondary sm:text-base">
-                  {t.workspace.subtitle}
-                </p>
+          <div className="space-y-12">
+            {/* Cal.com v7 Reference Centered Hero */}
+            <section className="mx-auto max-w-3xl text-center">
+              <div className="inline-flex items-center gap-2 rounded-md border border-surface-border bg-surface-card px-2.5 py-1 text-xs">
+                <span className="rounded-sm bg-surface-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-brand-text">
+                  FOP 3
+                </span>
+                <span className="text-ink-secondary">
+                  {isUk
+                    ? '16 перевірених модулів · Контекстний аудит SOW'
+                    : '16 vetted B2B modules · Context-aware SOW audit'}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 divide-y divide-surface-border border border-surface-strong bg-surface-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                {t.workspace.steps.map((step) => (
-                  <div key={step.num} className="p-4">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-brand px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white">
-                        {step.num}
-                      </span>
-                      <span className="text-sm font-semibold text-ink-primary">{step.title}</span>
-                    </div>
-                    <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
-                      {step.desc}
-                    </p>
+              <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[54px]">
+                {isUk ? (
+                  <>
+                    Де{' '}
+                    <span className="mx-1 inline-flex items-center rounded-md border border-surface-strong bg-surface-card px-2.5 py-1 align-middle font-mono text-sm font-semibold text-white sm:text-base">
+                      VETTED-16
+                    </span>{' '}
+                    договори
+                    <br className="hidden sm:inline" /> фіксують{' '}
+                    <span className="mx-1 inline-flex items-center gap-1.5 rounded-md border border-risk-lowBorder bg-risk-lowBg px-2.5 py-1 align-middle font-mono text-xs font-semibold text-risk-lowText sm:text-sm">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>Скоуп OK</span>
+                    </span>{' '}
+                    реальні умови
+                  </>
+                ) : (
+                  <>
+                    Where{' '}
+                    <span className="mx-1 inline-flex items-center rounded-md border border-surface-strong bg-surface-card px-2.5 py-1 align-middle font-mono text-sm font-semibold text-white sm:text-base">
+                      VETTED-16
+                    </span>{' '}
+                    contracts
+                    <br className="hidden sm:inline" /> match{' '}
+                    <span className="mx-1 inline-flex items-center gap-1.5 rounded-md border border-risk-lowBorder bg-risk-lowBg px-2.5 py-1 align-middle font-mono text-xs font-semibold text-risk-lowText sm:text-sm">
+                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>Scope OK</span>
+                    </span>{' '}
+                    what you agreed
+                  </>
+                )}
+              </h1>
+
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-ink-secondary sm:text-base">
+                {t.workspace.subtitle}
+              </p>
+
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => jumpToMode('builder')}
+                  className="inline-flex items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
+                >
+                  {isUk ? 'Скласти договір з модулів' : 'Build contract from vetted clauses'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => jumpToMode('auditor')}
+                  className="inline-flex items-center justify-center rounded-md border border-surface-border bg-surface-card px-5 py-2.5 text-sm font-medium text-white transition-colors hover:border-surface-strong hover:bg-surface-subtle"
+                >
+                  {isUk ? 'Звірити SOW із контекстом' : 'Audit SOW against project context'}
+                </button>
+              </div>
+
+              <p className="mt-3 font-mono text-[11px] text-ink-muted">
+                {isUk
+                  ? '100% безкоштовно · Без картки та paywall · Автовидалення через 24 год'
+                  : '100% free · No credit card or paywall · Files auto-delete in 24h'}
+              </p>
+            </section>
+
+            {/* Cal.com-Style Embedded Product Window Frame */}
+            <section
+              ref={workspaceRef}
+              className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
+            >
+              {/* Subtle macOS Window Chrome */}
+              <div className="flex h-10 items-center justify-between border-b border-surface-border bg-surface-subtle px-4">
+                <div className="flex items-center gap-1.5" aria-hidden="true">
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#EF4444]/80" />
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#F59E0B]/80" />
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#22C55E]/80" />
+                </div>
+                <span className="rounded-sm border border-surface-border bg-surface-bg px-3 py-0.5 font-mono text-[11px] text-ink-muted">
+                  clauseguard.app/{workspaceMode}
+                </span>
+                <span className="hidden font-mono text-[10px] text-ink-muted sm:inline">
+                  {t.disclaimerBadge}
+                </span>
+              </div>
+
+              {/* Mode Switcher Bar Inside App Window */}
+              <nav
+                aria-label="Workspace modes"
+                className="grid grid-cols-1 border-b border-surface-border bg-surface-bg sm:grid-cols-3"
+              >
+                {(
+                  [
+                    ['builder', t.modes.builder],
+                    ['auditor', t.modes.auditor],
+                    ['library', t.modes.library],
+                  ] as const
+                ).map(([modeId, label]) => {
+                  const active = workspaceMode === modeId;
+                  return (
+                    <button
+                      key={modeId}
+                      type="button"
+                      onClick={() => setWorkspaceMode(modeId)}
+                      className={`border-b border-surface-border px-4 py-3 text-left font-mono text-xs font-semibold transition-colors sm:border-b-0 sm:border-r last:border-b-0 last:border-r-0 ${
+                        active
+                          ? 'border-b-2 border-b-brand bg-surface-card text-white sm:border-b-0 sm:bg-surface-subtle'
+                          : 'text-ink-muted hover:bg-surface-card hover:text-ink-primary'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Active App Content */}
+              <div className="bg-surface-bg p-4 sm:p-6">
+                {workspaceMode === 'builder' ? (
+                  <ContractBuilderView initialTemplateId={builderTemplateOverride} />
+                ) : workspaceMode === 'library' ? (
+                  <ClauseLibraryView
+                    onUseTemplate={(tplId) => {
+                      setBuilderTemplateOverride(tplId);
+                      setWorkspaceMode('builder');
+                    }}
+                  />
+                ) : (
+                  <div className="space-y-8">
+                    {user && recentAudits.length > 0 && (
+                      <section className="overflow-hidden rounded-lg border border-surface-border bg-surface-card">
+                        <div className="border-b border-surface-border bg-surface-subtle px-4 py-2.5">
+                          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-white">
+                            {t.recentAudits.title}
+                          </h2>
+                        </div>
+                        <div className="divide-y divide-surface-border">
+                          {recentAudits.slice(0, 5).map((item) => (
+                            <div
+                              key={item.auditId}
+                              className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
+                            >
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span className="text-sm font-medium text-white">
+                                  {item.fileName}
+                                </span>
+                                {item.overallRiskScore !== null && (
+                                  <span className="rounded-sm border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
+                                    {t.recentAudits.scorePrefix}: {item.overallRiskScore}/100
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => void loadAuditFromId(item.auditId)}
+                                className="rounded-md border border-surface-border bg-surface-subtle px-3 py-1 text-xs font-medium text-white transition-colors hover:border-surface-strong"
+                              >
+                                {t.recentAudits.openBtn}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    <UploadZone onExtracted={openRecord} />
+                    <LiveClauseSpecimen />
                   </div>
-                ))}
+                )}
               </div>
-            </div>
+            </section>
 
-            {/* Why ClauseGuard Differs from Generic AI Chatbots */}
+            {/* Architectural Differentiation Strip */}
             <section className="space-y-3">
               <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                 {t.differentiator.heading}
               </p>
-              <div className="grid grid-cols-1 divide-y divide-surface-border border border-surface-strong bg-surface-card md:grid-cols-3 md:divide-x md:divide-y-0">
+              <div className="grid grid-cols-1 divide-y divide-surface-border overflow-hidden rounded-lg border border-surface-border bg-surface-card md:grid-cols-3 md:divide-x md:divide-y-0">
                 {t.differentiator.cards.map((card) => (
-                  <div key={card.tag} className="p-4">
-                    <span className="inline-block border border-brand bg-brand-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-brand">
+                  <div key={card.tag} className="p-5">
+                    <span className="inline-block rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
                       {card.tag}
                     </span>
-                    <h2 className="mt-2 font-serif text-base font-semibold text-ink-primary">
+                    <h2 className="mt-3 font-display text-base font-bold text-white">
                       {card.title}
                     </h2>
                     <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
@@ -190,92 +355,6 @@ const MainShell: React.FC = () => {
                 ))}
               </div>
             </section>
-
-            {/* Primary 3-Mode Workspace Switcher */}
-            <nav
-              aria-label="Workspace modes"
-              className="grid grid-cols-1 border border-surface-strong bg-surface-card sm:grid-cols-3"
-            >
-              {(
-                [
-                  ['builder', t.modes.builder],
-                  ['auditor', t.modes.auditor],
-                  ['library', t.modes.library],
-                ] as const
-              ).map(([modeId, label]) => {
-                const active = workspaceMode === modeId;
-                return (
-                  <button
-                    key={modeId}
-                    type="button"
-                    onClick={() => setWorkspaceMode(modeId)}
-                    className={`border-b border-surface-border px-4 py-3 text-left font-mono text-xs font-semibold transition-colors sm:border-b-0 sm:border-r last:border-b-0 last:border-r-0 ${
-                      active
-                        ? 'bg-brand text-white'
-                        : 'bg-surface-subtle text-ink-primary hover:bg-surface-bg'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {workspaceMode === 'builder' ? (
-              <ContractBuilderView initialTemplateId={builderTemplateOverride} />
-            ) : workspaceMode === 'library' ? (
-              <ClauseLibraryView
-                onUseTemplate={(tplId) => {
-                  setBuilderTemplateOverride(tplId);
-                  setWorkspaceMode('builder');
-                }}
-              />
-            ) : (
-              <div className="space-y-8">
-                {/* Signed-in User's Recent Audits (24h TTL) */}
-                {user && recentAudits.length > 0 && (
-                  <section className="border border-surface-strong bg-surface-card">
-                    <div className="border-b border-surface-strong bg-surface-subtle px-4 py-2.5">
-                      <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
-                        {t.recentAudits.title}
-                      </h2>
-                    </div>
-                    <div className="divide-y divide-surface-border">
-                      {recentAudits.slice(0, 5).map((item) => (
-                        <div
-                          key={item.auditId}
-                          className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5"
-                        >
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-sm font-medium text-ink-primary">
-                              {item.fileName}
-                            </span>
-                            {item.overallRiskScore !== null && (
-                              <span className="border border-surface-border bg-surface-bg px-2 py-0.5 font-mono text-xs font-semibold text-ink-secondary">
-                                {t.recentAudits.scorePrefix}: {item.overallRiskScore}/100
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void loadAuditFromId(item.auditId)}
-                            className="border border-surface-strong bg-surface-bg px-3 py-1 text-xs font-medium text-ink-primary transition-colors hover:bg-surface-subtle"
-                          >
-                            {t.recentAudits.openBtn}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Context-Aware SOW Upload + Sample Contracts */}
-                <UploadZone onExtracted={openRecord} />
-
-                {/* Full-Width 3-Column Real Audit Specimen */}
-                <LiveClauseSpecimen />
-              </div>
-            )}
           </div>
         ) : (
           <ResultsView
@@ -286,8 +365,8 @@ const MainShell: React.FC = () => {
         )}
       </main>
 
-      <footer className="border-t border-surface-strong bg-surface-subtle">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs text-ink-secondary sm:px-6">
+      <footer className="border-t border-surface-border bg-surface-card">
+        <div className="mx-auto max-w-6xl px-4 py-4 text-xs text-ink-muted sm:px-6">
           {t.disclaimerBanner}
         </div>
       </footer>

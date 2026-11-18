@@ -2,49 +2,88 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
+export type WorkspaceMode = 'builder' | 'auditor' | 'library';
+
 interface NavbarProps {
+  activeMode?: WorkspaceMode;
+  onSelectMode?: (mode: WorkspaceMode) => void;
   onOpenAuth: (mode: 'login' | 'signup') => void;
   onOpenDonate: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenDonate }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeMode,
+  onSelectMode,
+  onOpenAuth,
+  onOpenDonate,
+}) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
 
   return (
-    <header className="border-b border-surface-strong bg-surface-card">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <div className="flex h-14 items-center justify-between rounded-lg border border-surface-border bg-surface-card px-4">
+        {/* Left: Wordmark */}
         <div className="flex items-center gap-3">
           <a
             href="/"
-            className="flex items-center gap-2 text-ink-primary transition-colors hover:text-brand"
+            className="flex items-center gap-2 text-ink-primary transition-colors hover:text-white"
           >
-            <span className="border border-surface-strong bg-brand px-1.5 py-0.5 font-mono text-xs font-semibold text-white">
-              §
+            <span className="font-display text-lg font-bold tracking-tight text-white">
+              {t.brand}
             </span>
-            <span className="font-serif text-lg font-semibold tracking-tight">{t.brand}</span>
           </a>
-          <span className="hidden text-surface-border sm:inline" aria-hidden="true">
+          <span className="hidden text-surface-strong lg:inline" aria-hidden="true">
             /
           </span>
-          <span className="hidden font-mono text-[11px] font-medium uppercase tracking-wider text-ink-muted sm:inline">
+          <span className="hidden font-mono text-[10px] uppercase tracking-wider text-ink-muted lg:inline">
             {t.disclaimerBadge}
           </span>
         </div>
 
-        <nav className="flex items-center gap-2 sm:gap-3" aria-label="Primary navigation">
+        {/* Center: Clean Cal.com-style flat nav links */}
+        {onSelectMode && (
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Workspace switcher">
+            {(
+              [
+                ['builder', lang === 'uk' ? 'Конструктор' : 'Builder'],
+                ['auditor', lang === 'uk' ? 'Аудитор SOW' : 'SOW Auditor'],
+                ['library', lang === 'uk' ? 'Шаблони' : 'Templates'],
+              ] as const
+            ).map(([modeId, label]) => {
+              const active = activeMode === modeId;
+              return (
+                <button
+                  key={modeId}
+                  type="button"
+                  onClick={() => onSelectMode(modeId)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-surface-subtle text-white'
+                      : 'text-ink-secondary hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
+        {/* Right: Language, Donate, Auth */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <div
-            className="inline-flex border border-surface-strong bg-surface-bg"
+            className="inline-flex rounded-md border border-surface-border bg-surface-bg p-0.5"
             role="group"
             aria-label="Language switcher"
           >
             <button
               type="button"
               onClick={() => setLang('en')}
-              className={`px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors ${
+              className={`rounded-sm px-2 py-1 font-mono text-[11px] font-medium transition-colors ${
                 lang === 'en'
-                  ? 'bg-surface-strong text-white'
-                  : 'text-ink-secondary hover:bg-surface-subtle'
+                  ? 'bg-surface-subtle text-white'
+                  : 'text-ink-muted hover:text-ink-primary'
               }`}
             >
               EN
@@ -52,10 +91,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenDonate }) => {
             <button
               type="button"
               onClick={() => setLang('uk')}
-              className={`px-2.5 py-1 font-mono text-[11px] font-semibold transition-colors ${
+              className={`rounded-sm px-2 py-1 font-mono text-[11px] font-medium transition-colors ${
                 lang === 'uk'
-                  ? 'bg-surface-strong text-white'
-                  : 'text-ink-secondary hover:bg-surface-subtle'
+                  ? 'bg-surface-subtle text-white'
+                  : 'text-ink-muted hover:text-ink-primary'
               }`}
             >
               UA
@@ -65,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenDonate }) => {
           <button
             type="button"
             onClick={onOpenDonate}
-            className="border border-surface-border bg-surface-bg px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong"
+            className="hidden rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong hover:bg-surface-border sm:inline-flex"
           >
             {t.nav.donate}
           </button>
@@ -78,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenDonate }) => {
               <button
                 type="button"
                 onClick={logout}
-                className="border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong"
+                className="rounded-md border border-surface-border bg-surface-subtle px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-surface-strong"
               >
                 {t.nav.signOut}
               </button>
@@ -88,20 +127,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenDonate }) => {
               <button
                 type="button"
                 onClick={() => onOpenAuth('login')}
-                className="px-2.5 py-1.5 text-xs font-medium text-ink-secondary transition-colors hover:text-ink-primary"
+                className="rounded-md px-2.5 py-1.5 text-xs font-medium text-ink-secondary transition-colors hover:text-white"
               >
                 {t.nav.signIn}
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuth('signup')}
-                className="border border-brand bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-hover"
+                className="rounded-md bg-white px-3.5 py-1.5 text-xs font-semibold text-[#0A0A0A] transition-colors hover:bg-zinc-200"
               >
                 {t.nav.signUp}
               </button>
             </div>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

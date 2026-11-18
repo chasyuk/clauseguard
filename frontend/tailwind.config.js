@@ -4,50 +4,49 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        serif: ['"IBM Plex Serif"', 'Georgia', 'serif'],
+        display: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
         surface: {
-          bg: '#F7F5F0',       // Warm archival stone canvas
-          card: '#FDFCF9',     // Crisp document ivory
-          subtle: '#EFECE6',   // Warm sand headers / recessed areas
-          border: '#D4CFC7',   // Crisp graphite 1px border
-          strong: '#141413',   // Ink rule for sharp structural lines
+          bg: '#0A0A0A',       // Cal.com matte obsidian canvas
+          card: '#111113',     // Elevated dark panel
+          subtle: '#18181B',   // Recessed zinc container
+          border: '#27272A',   // Crisp 1px zinc-800 border
+          strong: '#3F3F46',   // Emphasized 1px zinc-700 border
         },
         ink: {
-          primary: '#141413',  // Deep charcoal
-          secondary: '#4A4843',
-          muted: '#78746C',
+          primary: '#FAFAFA',  // Crisp white primary text
+          secondary: '#A1A1AA',// Neutral zinc-400 body text
+          muted: '#71717A',    // Zinc-500 labels
         },
         brand: {
-          DEFAULT: '#0F4C3A',  // Deep forest green (single authoritative accent)
-          hover: '#093528',
-          subtle: '#E6EFEA',
+          DEFAULT: '#2563EB',  // Restrained deep blue accent
+          hover: '#1D4ED8',
+          subtle: '#172554',
+          text: '#93C5FD',
         },
         risk: {
-          highBg: '#FBEAEA',
-          highText: '#9E2A2B',
-          highBorder: '#D98282',
-          medBg: '#FDF3E7',
-          medText: '#8C5319',
-          medBorder: '#D9A76C',
-          lowBg: '#EAF4EE',
-          lowText: '#14532D',
-          lowBorder: '#79B491',
+          highBg: '#2A1215',
+          highText: '#FCA5A5',
+          highBorder: '#7F1D1D',
+          medBg: '#271B0E',
+          medText: '#FCD34D',
+          medBorder: '#78350F',
+          lowBg: '#0E2419',
+          lowText: '#86EFAC',
+          lowBorder: '#14532D',
         },
       },
       borderRadius: {
         none: '0px',
-        sm: '0px',
-        DEFAULT: '0px',
-        md: '0px',
-        lg: '0px',
-        xl: '0px',
-        '2xl': '0px',
-        '3xl': '0px',
-        full: '0px',
+        sm: '4px',
+        DEFAULT: '6px',
+        md: '6px',
+        lg: '8px',
+        xl: '8px',
       },
     },
   },
