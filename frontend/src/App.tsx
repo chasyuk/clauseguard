@@ -479,7 +479,7 @@ const MainShell: React.FC = () => {
               </div>
 
               {/* Right: Live Clause Specimen */}
-              <div className="rounded-xl border border-forest-border bg-forest p-5 text-white shadow-sm lg:col-span-6">
+              <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-6 lg:col-span-6">
                 <LiveClauseSpecimen onRunSample={() => void handleRunLiveSample()} />
               </div>
             </div>
