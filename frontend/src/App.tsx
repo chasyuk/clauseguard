@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
 import { fetchAuditById, fetchMyAudits } from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ClauseLibraryView } from './components/ClauseLibraryView';
@@ -172,43 +172,13 @@ const MainShell: React.FC = () => {
               <h1 className="mt-6 font-display text-5xl font-extrabold leading-[1.04] tracking-[-0.035em] text-white sm:text-6xl lg:text-[66px]">
                 {isUk ? (
                   <>
-                    Де{' '}
-                    <span className="mx-1 inline-flex items-center gap-2 rounded-lg border border-surface-strong bg-surface-card px-3 py-1.5 align-middle font-mono text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 sm:text-base">
-                      <ShieldCheck className="h-4 w-4 text-brand-text" aria-hidden="true" />
-                      <span>VETTED</span>
-                    </span>{' '}
-                    договори
-                    <br className="hidden sm:inline" /> фіксують{' '}
-                    <span className="mx-1 inline-flex flex-col items-start rounded-lg border border-surface-strong bg-surface-card px-3 py-1 text-left align-middle transition-transform duration-150 hover:-translate-y-0.5">
-                      <span className="font-mono text-[11px] font-medium text-ink-secondary">
-                        SOW Audit
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-[#F97316]">
-                        <Check className="h-3 w-3" aria-hidden="true" />
-                        <span>Скоуп OK</span>
-                      </span>
-                    </span>{' '}
-                    умови проєкту
+                    Де договори фіксують
+                    <br className="hidden sm:inline" /> реальні умови проєкту
                   </>
                 ) : (
                   <>
-                    Where{' '}
-                    <span className="mx-1 inline-flex items-center gap-2 rounded-lg border border-surface-strong bg-surface-card px-3 py-1.5 align-middle font-mono text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 sm:text-base">
-                      <ShieldCheck className="h-4 w-4 text-brand-text" aria-hidden="true" />
-                      <span>FOP · ZED</span>
-                    </span>{' '}
-                    contracts
-                    <br className="hidden sm:inline" /> match{' '}
-                    <span className="mx-1 inline-flex flex-col items-start rounded-lg border border-surface-strong bg-surface-card px-3 py-1 text-left align-middle transition-transform duration-150 hover:-translate-y-0.5">
-                      <span className="font-mono text-[11px] font-medium text-ink-secondary">
-                        SOW Check
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-[#F97316]">
-                        <Check className="h-3 w-3" aria-hidden="true" />
-                        <span>Scope OK</span>
-                      </span>
-                    </span>{' '}
-                    what you agreed
+                    Where contracts
+                    <br className="hidden sm:inline" /> match what you agreed
                   </>
                 )}
               </h1>
