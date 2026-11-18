@@ -150,17 +150,17 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Deal Context Input Panel: Check Written SOW Against Agreed Project Reality */}
-      <section className="overflow-hidden rounded-lg border border-surface-border bg-surface-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border bg-surface-subtle px-4 py-2.5">
-          <h2 className="font-mono text-xs font-semibold uppercase tracking-wider text-ink-primary">
+    <div className="space-y-8">
+      {/* Deal Context Input Panel: Flat Open Layout */}
+      <section className="space-y-4 border-b border-surface-border pb-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold text-white">
             {t.dealContext.heading}
           </h2>
           <button
             type="button"
             onClick={() => setShowContextFields((p) => !p)}
-            className="inline-flex items-center gap-1 rounded-md border border-surface-border bg-surface-bg px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-surface-strong"
+            className="inline-flex items-center gap-1 rounded-md border border-surface-border bg-surface-card px-3 py-1.5 font-mono text-xs font-medium text-ink-primary hover:border-surface-strong"
           >
             <span>{showContextFields ? t.dealContext.toggleHide : t.dealContext.toggleShow}</span>
             {showContextFields ? (
@@ -172,21 +172,21 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
         </div>
 
         {showContextFields && (
-          <div className="space-y-4 p-4">
+          <div className="space-y-4">
             <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-              <p className="text-xs leading-relaxed text-ink-secondary">{t.dealContext.subheading}</p>
+              <p className="text-sm leading-relaxed text-ink-secondary">{t.dealContext.subheading}</p>
               <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => loadPresetContext('en')}
-                  className="rounded-md border border-surface-border bg-surface-bg px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-brand hover:text-brand-text"
+                  className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-xs font-medium text-ink-primary hover:border-brand hover:text-brand-text"
                 >
                   {t.dealContext.presetEnBtn}
                 </button>
                 <button
                   type="button"
                   onClick={() => loadPresetContext('uk')}
-                  className="rounded-md border border-surface-border bg-surface-bg px-2.5 py-1 font-mono text-[11px] font-medium text-ink-primary hover:border-brand hover:text-brand-text"
+                  className="rounded-md border border-surface-border bg-surface-card px-2.5 py-1 font-mono text-xs font-medium text-ink-primary hover:border-brand hover:text-brand-text"
                 >
                   {t.dealContext.presetUkBtn}
                 </button>
@@ -200,7 +200,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                       agreedExclusions: '',
                     })
                   }
-                  className="rounded-md border border-surface-border px-2.5 py-1 font-mono text-[11px] text-ink-muted hover:text-white"
+                  className="rounded-md border border-surface-border px-2.5 py-1 font-mono text-xs text-ink-muted hover:text-white"
                 >
                   {t.dealContext.clearBtn}
                 </button>
@@ -209,7 +209,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.dealContext.scopeLabel}
                 </label>
                 <input
@@ -219,12 +219,12 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                     setDealContext((prev) => ({ ...prev, agreedScope: e.target.value }))
                   }
                   placeholder={t.dealContext.scopePlaceholder}
-                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-xs text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
+                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.dealContext.timelineLabel}
                 </label>
                 <input
@@ -234,12 +234,12 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                     setDealContext((prev) => ({ ...prev, agreedTimeline: e.target.value }))
                   }
                   placeholder={t.dealContext.timelinePlaceholder}
-                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-xs text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
+                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.dealContext.paymentLabel}
                 </label>
                 <input
@@ -249,12 +249,12 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                     setDealContext((prev) => ({ ...prev, agreedPayment: e.target.value }))
                   }
                   placeholder={t.dealContext.paymentPlaceholder}
-                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-xs text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
+                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                   {t.dealContext.exclusionsLabel}
                 </label>
                 <input
@@ -264,13 +264,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
                     setDealContext((prev) => ({ ...prev, agreedExclusions: e.target.value }))
                   }
                   placeholder={t.dealContext.exclusionsPlaceholder}
-                  className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-xs text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
+                  className="mt-1.5 w-full rounded-md border border-surface-border bg-surface-card px-3.5 py-2.5 text-sm text-white placeholder:text-ink-muted focus:border-brand focus:outline-none"
                 />
               </div>
             </div>
 
             {!cleanDealContext(dealContext) && (
-              <p className="rounded-md border border-brand/40 bg-brand-subtle/40 px-3 py-1.5 text-[11px] text-brand-text">
+              <p className="text-xs text-ink-muted">
                 {t.dealContext.sampleContextActive}
               </p>
             )}

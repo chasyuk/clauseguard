@@ -23,12 +23,6 @@ interface ResultsViewProps {
 
 type FilterOption = 'ALL' | RiskLevel;
 
-const BORDER_ACCENTS: Record<RiskLevel, string> = {
-  HIGH: 'border-risk-highBorder',
-  MEDIUM: 'border-risk-medBorder',
-  LOW: 'border-risk-lowBorder',
-};
-
 export const ResultsView: React.FC<ResultsViewProps> = ({
   record,
   onReset,
@@ -569,9 +563,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                         <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                           {t.extraction.col1Title}
                         </span>
-                        <blockquote
-                          className={`mt-2 rounded-md border border-surface-border border-l-2 ${BORDER_ACCENTS[flag.riskLevel]} bg-surface-bg p-3 text-[13px] leading-relaxed text-ink-primary`}
-                        >
+                        <blockquote className="mt-2 rounded-md border border-surface-border bg-surface-bg p-3.5 text-sm leading-relaxed text-ink-primary">
                           “{flag.originalExcerpt}”
                         </blockquote>
                       </div>

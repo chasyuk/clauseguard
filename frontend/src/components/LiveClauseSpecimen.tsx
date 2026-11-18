@@ -78,7 +78,7 @@ export const LiveClauseSpecimen: React.FC = () => {
               {active.clauseRef}
             </span>
           </div>
-          <blockquote className="rounded-md border border-surface-border border-l-2 border-l-risk-highBorder bg-surface-bg p-3.5 text-[13px] leading-relaxed text-ink-primary">
+          <blockquote className="rounded-md border border-surface-border bg-surface-bg p-4 text-sm leading-relaxed text-ink-primary">
             “{active.originalExcerpt}”
           </blockquote>
         </div>
