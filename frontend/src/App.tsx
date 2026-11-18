@@ -8,7 +8,7 @@ import {
 } from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ContractBuilderView } from './components/ContractBuilderView';
-import { DonationModal } from './components/DonationModal';
+import { PricingModal, PricingReason } from './components/PricingModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
 import { Navbar, PageView } from './components/Navbar';
 import { ResultsView } from './components/ResultsView';
@@ -65,7 +65,14 @@ const MainShell: React.FC = () => {
     open: false,
     mode: 'login',
   });
-  const [donateOpen, setDonateOpen] = useState(false);
+  const [pricingModal, setPricingModal] = useState<{ open: boolean; reason: PricingReason }>({
+    open: false,
+    reason: 'general',
+  });
+
+  const openPricingModal = (reason: PricingReason = 'general') => {
+    setPricingModal({ open: true, reason });
+  };
   const [activeRecord, setActiveRecord] = useState<AuditExtractionRecord | null>(null);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLoadError, setAuditLoadError] = useState(false);
@@ -167,7 +174,8 @@ const MainShell: React.FC = () => {
         currentPage={activeRecord ? 'auditor' : currentPage}
         onSelectPage={handleSelectPage}
         onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
-        onOpenDonate={() => setDonateOpen(true)}
+        onOpenPricing={() => openPricingModal('general')}
+        freeAuditsRemaining={Math.max(0, 3 - recentAudits.length)}
       />
 
       {loadingAudit ? (
@@ -205,7 +213,7 @@ const MainShell: React.FC = () => {
         <ResultsView
           record={activeRecord}
           onReset={resetToUpload}
-          onOpenDonate={() => setDonateOpen(true)}
+          onOpenPricing={() => openPricingModal('general')}
         />
       ) : currentPage === 'home' ? (
         /* HOME / LANDING VIEW */
@@ -475,7 +483,11 @@ const MainShell: React.FC = () => {
                   </div>
                 )}
 
-                <UploadZone onExtracted={openRecord} />
+                <UploadZone
+                  onExtracted={openRecord}
+                  auditsCount={user ? recentAudits.length : 0}
+                  onOpenPricing={openPricingModal}
+                />
               </div>
 
               {/* Right: Live Clause Specimen */}
@@ -549,32 +561,15 @@ const MainShell: React.FC = () => {
             </div>
 
             <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-7">
-              <ContractBuilderView />
+              <ContractBuilderView onOpenPricing={openPricingModal} isPro={user?.plan === 'pro'} />
             </div>
           </div>
         </main>
       )}
 
-      {/* Light Paper Footer with Support Bar */}
+      {/* Light Paper Footer */}
       <footer className="border-t border-paper-border bg-paper px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-4">
-          {!activeRecord && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-paper-border bg-white px-5 py-4">
-              <p className="text-sm text-ink-secondary">
-                <strong className="font-semibold text-ink-primary">ClauseGuard</strong>{' '}
-                {isUk
-                  ? 'безкоштовний. Якщо він вберіг вас від поганої угоди, підтримайте проєкт.'
-                  : 'is free. If it saved you from a bad deal, you can chip in.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => setDonateOpen(true)}
-                className="rounded-full border border-paper-border bg-paper px-4 py-1.5 text-xs font-semibold text-ink-primary transition-colors hover:border-forest hover:bg-white"
-              >
-                {isUk ? 'Підтримати через Monobank' : 'Support via Monobank'}
-              </button>
-            </div>
-          )}
           <p className="text-xs text-ink-muted">{t.disclaimerBanner}</p>
         </div>
       </footer>
@@ -585,7 +580,11 @@ const MainShell: React.FC = () => {
         onClose={() => setAuthModal((prev) => ({ ...prev, open: false }))}
       />
 
-      <DonationModal isOpen={donateOpen} onClose={() => setDonateOpen(false)} />
+      <PricingModal
+        isOpen={pricingModal.open}
+        reason={pricingModal.reason}
+        onClose={() => setPricingModal((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 };

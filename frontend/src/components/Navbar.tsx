@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -8,14 +9,16 @@ interface NavbarProps {
   currentPage: PageView;
   onSelectPage: (page: PageView) => void;
   onOpenAuth: (mode: 'login' | 'signup') => void;
-  onOpenDonate: () => void;
+  onOpenPricing: () => void;
+  freeAuditsRemaining?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentPage,
   onSelectPage,
   onOpenAuth,
-  onOpenDonate,
+  onOpenPricing,
+  freeAuditsRemaining = 3,
 }) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
@@ -25,7 +28,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'home' as const, label: isUk ? 'Головна' : 'Home', mobileLabel: isUk ? 'Головна' : 'Home' },
     { id: 'auditor' as const, label: isUk ? 'Аудит договору' : 'Audit', mobileLabel: isUk ? 'Аудит' : 'Audit' },
     { id: 'reconcile' as const, label: isUk ? 'Звірка з чатом' : 'Chat vs SOW', mobileLabel: isUk ? 'Звірка' : 'Chat SOW' },
-    { id: 'builder' as const, label: isUk ? 'Зібрати договір' : 'Contract builder', mobileLabel: isUk ? 'Конструктор' : 'Builder' },
+    {
+      id: 'builder' as const,
+      label: isUk ? 'Зібрати договір' : 'Contract builder',
+      mobileLabel: isUk ? 'Конструктор' : 'Builder',
+      isPro: true,
+    },
   ];
 
   return (
@@ -59,19 +67,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectPage(item.id)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                   active
                     ? 'bg-signal text-white shadow-sm'
                     : 'text-forest-muted hover:text-white'
                 }`}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.isPro && (
+                  <span
+                    className={`rounded px-1 py-0.2 text-[9px] font-extrabold ${
+                      active
+                        ? 'bg-white/20 text-white'
+                        : 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                    }`}
+                  >
+                    PRO
+                  </span>
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Right actions: Lang switcher, Donate, Auth */}
+        {/* Right actions: Lang switcher, Pricing/Pro, Auth */}
         <div className="flex items-center gap-1.5 sm:gap-3">
           {/* UA / EN pill toggle */}
           <div
@@ -99,19 +118,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
+          {/* Pricing Button */}
           <button
             type="button"
-            onClick={onOpenDonate}
-            className="hidden rounded-full border border-forest-border px-3 py-1.5 text-xs font-medium text-forest-muted transition-colors hover:border-white/40 hover:text-white lg:inline-flex"
+            onClick={onOpenPricing}
+            className="inline-flex items-center gap-1 rounded-full border border-forest-border bg-forest-deep px-3 py-1.5 text-xs font-semibold text-white/90 transition-colors hover:border-amber-400/40 hover:text-amber-200"
           >
-            {t.nav.donate}
+            <Sparkles className="h-3 w-3 text-signal" />
+            <span>{isUk ? 'Тарифи' : 'Pricing'}</span>
           </button>
 
           {user ? (
             <div className="flex items-center gap-1.5 border-l border-forest-border pl-1.5 sm:gap-2 sm:pl-2.5">
-              <span className="max-w-[96px] truncate font-mono text-[11px] font-medium text-white/90 sm:max-w-[160px] sm:text-xs">
-                {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
-              </span>
+              <div className="hidden flex-col items-end sm:flex">
+                <span className="max-w-[120px] truncate font-mono text-xs font-medium text-white/90">
+                  {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
+                </span>
+                <span className="font-mono text-[10px] text-forest-muted">
+                  {freeAuditsRemaining > 0
+                    ? `${freeAuditsRemaining}/3 ${isUk ? 'безкоштовно' : 'free'}`
+                    : 'Pro'}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={logout}
@@ -157,7 +185,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : 'text-forest-muted hover:text-white'
                 }`}
               >
-                {item.mobileLabel}
+                <span>{item.mobileLabel}</span>
+                {item.isPro && (
+                  <span className="ml-0.5 text-[8px] font-extrabold text-amber-300">★</span>
+                )}
               </button>
             );
           })}

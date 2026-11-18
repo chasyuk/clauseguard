@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Download,
   FileText,
+  Lock,
   Loader2,
   Upload,
   X,
@@ -21,6 +22,8 @@ import { AuditExtractionRecord, DealContext, SampleMetadata } from '../types';
 
 interface UploadZoneProps {
   onExtracted: (record: AuditExtractionRecord) => void;
+  auditsCount?: number;
+  onOpenPricing?: (reason: 'audit_limit') => void;
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -42,7 +45,13 @@ function buildDealContext(
   return { rawNotes: combined };
 }
 
-export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
+export const UploadZone: React.FC<UploadZoneProps> = ({
+  onExtracted,
+  auditsCount = 0,
+  onOpenPricing,
+}) => {
+  const freeAuditsLimit = 3;
+  const isLimitReached = auditsCount >= freeAuditsLimit;
   const { t, lang } = useLanguage();
   const { token } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +120,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   };
 
   const handleAuditSelectedFile = async () => {
+    if (isLimitReached) {
+      onOpenPricing?.('audit_limit');
+      return;
+    }
     if (!selectedFile) {
       fileInputRef.current?.click();
       return;
@@ -127,6 +140,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   };
 
   const handleSampleTest = async (filename: string) => {
+    if (isLimitReached) {
+      onOpenPricing?.('audit_limit');
+      return;
+    }
     setErrorMessage(null);
     const activeCtx = buildDealContext(dealContext, userRole, docType);
     try {
@@ -141,12 +158,52 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (isLimitReached) {
+      onOpenPricing?.('audit_limit');
+      return;
+    }
     const file = e.dataTransfer.files?.[0];
     if (file) validateAndStageFile(file);
   };
 
   return (
     <div className="space-y-5 text-ink-primary">
+      {/* Free Audit Counter or Limit Banner */}
+      {isLimitReached ? (
+        <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-3.5 text-xs text-amber-950 shadow-xs">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 shrink-0 text-amber-700" />
+              <span className="font-bold">
+                {isUk ? 'Використано 3 з 3 безкоштовних перевірок' : '3 of 3 free audits used'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenPricing?.('audit_limit')}
+              className="rounded-lg bg-forest px-3 py-1 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-forest-soft"
+            >
+              {isUk ? 'Перейти на Pro' : 'Upgrade to Pro'}
+            </button>
+          </div>
+          <p className="mt-1 text-[11px] text-amber-900/80">
+            {isUk
+              ? 'На вашому акаунті досягнуто ліміту безкоштовних перевірок. Підключіть Pro для безліміту або придбайте разовий пакет.'
+              : 'Free audit limit reached on this account. Upgrade to Pro for unlimited scans.'}
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between rounded-lg border border-paper-border bg-paper/60 px-3.5 py-1.5 text-xs">
+          <span className="text-ink-secondary">
+            {isUk ? 'Безкоштовний тариф на акаунт:' : 'Free tier plan:'}
+          </span>
+          <span className="font-mono text-xs font-semibold text-forest">
+            {isUk
+              ? `Залишилось ${freeAuditsLimit - auditsCount} з ${freeAuditsLimit} перевірок`
+              : `${freeAuditsLimit - auditsCount} of ${freeAuditsLimit} audits remaining`}
+          </span>
+        </div>
+      )}
       {/* Step 1 Header + Source Switch */}
       <div>
         <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -184,7 +241,13 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
           role="button"
           tabIndex={0}
           aria-label={t.upload.dropzoneTitle}
-          onClick={() => !loadingStage && fileInputRef.current?.click()}
+          onClick={() => {
+            if (isLimitReached) {
+              onOpenPricing?.('audit_limit');
+              return;
+            }
+            if (!loadingStage) fileInputRef.current?.click();
+          }}
           onKeyDown={(e) => {
             if ((e.key === 'Enter' || e.key === ' ') && !loadingStage) {
               e.preventDefault();

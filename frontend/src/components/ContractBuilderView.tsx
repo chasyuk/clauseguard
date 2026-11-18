@@ -32,6 +32,8 @@ import {
 
 interface ContractBuilderViewProps {
   initialTemplateId?: string;
+  onOpenPricing?: (reason: 'builder') => void;
+  isPro?: boolean;
 }
 
 type BuildMode = 'text' | 'template';
@@ -64,7 +66,11 @@ function sanitizeScenarioText(text: string): string {
     .replace(/Олександр Власюк/gi, 'Олена Коваленко');
 }
 
-export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initialTemplateId }) => {
+export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
+  initialTemplateId,
+  onOpenPricing,
+  isPro = false,
+}) => {
   const { t, lang } = useLanguage();
   const isUk = lang === 'uk';
 
@@ -201,6 +207,10 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
     overridePosture?: ClausePosture;
     overrideLang?: BuilderLanguage;
   }) => {
+    if (!isPro) {
+      onOpenPricing?.('builder');
+      return;
+    }
     setError(null);
     setIsLoading(true);
     try {
@@ -253,6 +263,10 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
   };
 
   const handleDownload = async (format: 'docx' | 'pdf') => {
+    if (!isPro) {
+      onOpenPricing?.('builder');
+      return;
+    }
     if (!assembled) return;
     setExportingType(format);
     setError(null);
@@ -282,6 +296,33 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({ initia
 
   return (
     <div className="space-y-6">
+      {/* Pro Tier Announcement Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 shadow-xs sm:px-5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500 font-mono text-[10px] font-extrabold text-white shadow-xs">
+            PRO
+          </span>
+          <div>
+            <span className="font-bold">
+              {isUk ? 'Конструктор договорів (тариф Pro)' : 'Contract Builder (Pro feature)'}
+            </span>
+            <span className="hidden text-amber-900/80 sm:inline">
+              {' '}— {isUk ? 'Складання та експорт готових контрактів (.docx/.pdf) за 16 захисними пунктами ФОП.' : 'Assemble & export verified B2B contracts.'}
+            </span>
+          </div>
+        </div>
+        {!isPro && (
+          <button
+            type="button"
+            onClick={() => onOpenPricing?.('builder')}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-forest px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-forest-soft"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-signal" />
+            <span>{isUk ? 'Підключити Pro' : 'Upgrade to Pro'}</span>
+          </button>
+        )}
+      </div>
+
       {/* Top Bar: Title + Compact 3-Step Progress Indicator */}
       <div className="flex flex-col justify-between gap-4 border-b border-paper-border pb-4 lg:flex-row lg:items-center">
         <div>

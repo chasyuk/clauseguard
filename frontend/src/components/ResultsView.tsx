@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  Sparkles,
   Check,
   ChevronDown,
   ChevronUp,
@@ -18,7 +19,7 @@ import { RiskBadge } from './RiskBadge';
 interface ResultsViewProps {
   record: AuditExtractionRecord;
   onReset: () => void;
-  onOpenDonate: () => void;
+  onOpenPricing: () => void;
 }
 
 type FilterOption = 'ALL' | RiskLevel;
@@ -53,7 +54,7 @@ function buildToneCounterClause(
 export const ResultsView: React.FC<ResultsViewProps> = ({
   record,
   onReset,
-  onOpenDonate,
+  onOpenPricing,
 }) => {
   const { t, lang } = useLanguage();
   const isUk = lang === 'uk';
@@ -675,20 +676,27 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
           )}
         </div>
 
-        {/* Support Banner */}
+        {/* Pro Banner */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-paper-border bg-white px-5 py-4">
-          <p className="text-sm text-ink-secondary">
-            <strong className="font-semibold text-ink-primary">ClauseGuard</strong>{' '}
-            {isUk
-              ? 'безкоштовний. Якщо він вберіг вас від поганої угоди, підтримайте проєкт.'
-              : 'is free. If it saved you from a bad deal, you can chip in.'}
-          </p>
+          <div>
+            <p className="text-sm font-semibold text-ink-primary">
+              {isUk
+                ? 'Потрібно створити безпечний договір або SOW?'
+                : 'Need to draft a safe B2B contract or SOW?'}
+            </p>
+            <p className="text-xs text-ink-muted">
+              {isUk
+                ? 'Спробуйте Конструктор договорів ClauseGuard Pro — генерація та експорт за 16 захисними пунктами ФОП.'
+                : 'Use ClauseGuard Pro Contract Builder to generate verified agreements in .docx and .pdf.'}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={onOpenDonate}
-            className="rounded-full border border-paper-border bg-paper px-4 py-1.5 text-xs font-semibold text-ink-primary transition-colors hover:border-forest hover:bg-white"
+            onClick={onOpenPricing}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-forest px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-forest-soft"
           >
-            {isUk ? 'Підтримати через Monobank' : 'Support via Monobank'}
+            <Sparkles className="h-3.5 w-3.5 text-signal" />
+            <span>{isUk ? 'Тарифи та Pro' : 'View Pro Plans'}</span>
           </button>
         </div>
       </section>
