@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, Loader2, X } from 'lucide-react';
-import { DonationReceipt, submitDonation } from '../api/client';
+import { ExternalLink, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface DonationModalProps {
@@ -14,28 +13,12 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
   const { t, lang } = useLanguage();
   const [selectedUah, setSelectedUah] = useState<number>(100);
   const [openedJar, setOpenedJar] = useState(false);
-  const [submittingMock, setSubmittingMock] = useState(false);
-  const [receipt, setReceipt] = useState<DonationReceipt | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const jarUrl =
     (import.meta.env.VITE_MONOBANK_JAR_URL as string | undefined) ||
     'https://send.monobank.ua/jar/8D84Pi88MN';
-
-  const handleMockDonate = async () => {
-    setError(null);
-    setSubmittingMock(true);
-    try {
-      const res = await submitDonation(selectedUah, 'mock');
-      setReceipt(res);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Donation test failed.');
-    } finally {
-      setSubmittingMock(false);
-    }
-  };
 
   return (
     <div
@@ -73,7 +56,6 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
                 onClick={() => {
                   setSelectedUah(amount);
                   setOpenedJar(false);
-                  setReceipt(null);
                 }}
                 className={`rounded-md border px-3 py-2 font-mono text-xs font-medium transition-colors ${
                   selectedUah === amount
@@ -95,26 +77,13 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
           </div>
         )}
 
-        {receipt && (
-          <div className="mt-4 rounded-md border border-risk-lowBorder bg-risk-lowBg px-3 py-2 text-xs text-risk-lowText">
-            {t.donation.donationSuccess} {receipt.amountUah} {receipt.currency} (ID:{' '}
-            <span className="font-mono">{receipt.donationId.slice(0, 8)}</span>)
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-4 rounded-md border border-risk-highBorder bg-risk-highBg px-3 py-2 text-xs text-risk-highText">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-5 space-y-2">
+        <div className="mt-5 space-y-2.5">
           <a
             href={jarUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setOpenedJar(true)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-signal px-4 py-2.5 text-xs font-bold text-ink-primary transition-colors hover:bg-signal-hover"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-signal px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-signal-hover"
           >
             <span>
               {t.donation.openJar} ({selectedUah} UAH)
@@ -122,24 +91,13 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              disabled={submittingMock}
-              onClick={() => void handleMockDonate()}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-surface-border bg-surface-subtle px-3 py-2 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong disabled:opacity-60"
-            >
-              {submittingMock && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
-              <span>{t.donation.testDonateBtn}</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-surface-border px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:bg-paper-soft hover:text-ink-primary"
-            >
-              {t.donation.close}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-md border border-surface-border px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:bg-paper-soft hover:text-ink-primary"
+          >
+            {t.donation.close}
+          </button>
         </div>
       </div>
     </div>
