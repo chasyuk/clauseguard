@@ -2,31 +2,41 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-export type WorkspaceMode = 'auditor' | 'reconcile' | 'builder';
+export type PageView = 'home' | 'auditor' | 'reconcile' | 'builder';
 
 interface NavbarProps {
-  activeMode?: WorkspaceMode;
-  onSelectMode?: (mode: WorkspaceMode) => void;
+  currentPage: PageView;
+  onSelectPage: (page: PageView) => void;
   onOpenAuth: (mode: 'login' | 'signup') => void;
   onOpenDonate: () => void;
-  showLandingAnchors?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  currentPage,
+  onSelectPage,
   onOpenAuth,
   onOpenDonate,
-  showLandingAnchors = true,
 }) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
+  const isUk = lang === 'uk';
+
+  const navItems = [
+    { id: 'home' as const, label: isUk ? 'Головна' : 'Home', mobileLabel: isUk ? 'Головна' : 'Home' },
+    { id: 'auditor' as const, label: isUk ? 'Аудит договору' : 'Audit', mobileLabel: isUk ? 'Аудит' : 'Audit' },
+    { id: 'reconcile' as const, label: isUk ? 'Звірка з чатом' : 'Chat vs SOW', mobileLabel: isUk ? 'Звірка' : 'Chat SOW' },
+    { id: 'builder' as const, label: isUk ? 'Зібрати договір' : 'Contract builder', mobileLabel: isUk ? 'Конструктор' : 'Builder' },
+  ];
 
   return (
-    <header className="w-full border-b border-forest-border bg-forest text-white">
+    <header className="sticky top-0 z-40 w-full border-b border-forest-border bg-forest/95 text-white backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:px-6">
         {/* Left: § clauseguard mark */}
-        <a
-          href="/"
+        <button
+          type="button"
+          onClick={() => onSelectPage('home')}
           className="flex shrink-0 items-center gap-1.5 text-white transition-opacity hover:opacity-90 sm:gap-2.5"
+          aria-label="ClauseGuard Home"
         >
           <span
             className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-signal font-mono text-xs font-bold text-white sm:h-7 sm:w-7 sm:text-sm"
@@ -38,21 +48,31 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-white">clause</span>
             <span className="text-signal">guard</span>
           </span>
-        </a>
+        </button>
 
-        {/* Right navigation */}
-        <div className="flex items-center gap-1.5 sm:gap-4">
-          {showLandingAnchors && (
-            <div className="hidden items-center gap-4 text-xs font-medium text-forest-muted lg:flex">
-              <a href="#how-it-works" className="transition-colors hover:text-white">
-                {lang === 'uk' ? 'Як це працює' : 'How it works'}
-              </a>
-              <a href="#privacy" className="transition-colors hover:text-white">
-                {lang === 'uk' ? 'Приватність' : 'Privacy'}
-              </a>
-            </div>
-          )}
+        {/* Center: Desktop Navigation Tabs */}
+        <nav className="hidden items-center gap-1 rounded-full border border-forest-border bg-forest-deep p-1 md:flex" aria-label="Main Navigation">
+          {navItems.map((item) => {
+            const active = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectPage(item.id)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-signal text-white shadow-sm'
+                    : 'text-forest-muted hover:text-white'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
+        {/* Right actions: Lang switcher, Donate, Auth */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* UA / EN pill toggle */}
           <div
             className="inline-flex shrink-0 items-center rounded-full border border-forest-border bg-forest-deep p-0.5"
@@ -82,14 +102,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenDonate}
-            className="hidden rounded-full border border-forest-border px-3 py-1.5 text-xs font-medium text-forest-muted transition-colors hover:border-white/40 hover:text-white md:inline-flex"
+            className="hidden rounded-full border border-forest-border px-3 py-1.5 text-xs font-medium text-forest-muted transition-colors hover:border-white/40 hover:text-white lg:inline-flex"
           >
             {t.nav.donate}
           </button>
 
           {user ? (
             <div className="flex items-center gap-1.5 border-l border-forest-border pl-1.5 sm:gap-2 sm:pl-2.5">
-              <span className="max-w-[96px] truncate font-mono text-[11px] font-medium text-white/90 sm:max-w-[180px] sm:text-xs">
+              <span className="max-w-[96px] truncate font-mono text-[11px] font-medium text-white/90 sm:max-w-[160px] sm:text-xs">
                 {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
               </span>
               <button
@@ -119,6 +139,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile sub-navigation bar (4 clean tabs, 1 row) */}
+      <div className="border-t border-forest-border/60 bg-forest-deep/90 px-3 py-1.5 md:hidden">
+        <nav className="grid grid-cols-4 gap-1 text-center" aria-label="Mobile Navigation">
+          {navItems.map((item) => {
+            const active = currentPage === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectPage(item.id)}
+                className={`truncate rounded-md py-1.5 text-[11px] font-semibold transition-colors ${
+                  active
+                    ? 'bg-signal text-white'
+                    : 'text-forest-muted hover:text-white'
+                }`}
+              >
+                {item.mobileLabel}
+              </button>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );

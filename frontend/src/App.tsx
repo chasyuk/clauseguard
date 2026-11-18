@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, ArrowLeft, ArrowRight, FileCheck, Layers, Loader2, MessageSquareText } from 'lucide-react';
 import {
   analyzeAudit,
   extractSampleContract,
@@ -10,7 +10,7 @@ import { AuthModal } from './components/AuthModal';
 import { ContractBuilderView } from './components/ContractBuilderView';
 import { DonationModal } from './components/DonationModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
-import { Navbar, WorkspaceMode } from './components/Navbar';
+import { Navbar, PageView } from './components/Navbar';
 import { ResultsView } from './components/ResultsView';
 import { SowReconciliationView } from './components/SowReconciliationView';
 import { UploadZone } from './components/UploadZone';
@@ -25,6 +25,15 @@ function readAuditIdFromUrl(): string | null {
 
   const pathMatch = window.location.pathname.match(/^\/audits\/([^/]+)$/);
   return pathMatch ? decodeURIComponent(pathMatch[1]) : null;
+}
+
+function readPageFromUrl(): PageView {
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get('page');
+  if (page === 'audit' || page === 'auditor') return 'auditor';
+  if (page === 'reconcile') return 'reconcile';
+  if (page === 'builder') return 'builder';
+  return 'home';
 }
 
 const MARQUEE_ITEMS_EN = [
@@ -50,7 +59,6 @@ const MARQUEE_ITEMS_UK = [
 const MainShell: React.FC = () => {
   const { t, lang } = useLanguage();
   const { user, token } = useAuth();
-  const workspaceRef = useRef<HTMLDivElement>(null);
   const isUk = lang === 'uk';
 
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'login' | 'signup' }>({
@@ -62,8 +70,7 @@ const MainShell: React.FC = () => {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [auditLoadError, setAuditLoadError] = useState(false);
   const [recentAudits, setRecentAudits] = useState<AuditSummaryItem[]>([]);
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('auditor');
-  const [builderTemplateOverride] = useState<string | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState<PageView>(() => readPageFromUrl());
 
   const loadAuditFromId = async (auditId: string) => {
     setLoadingAudit(true);
@@ -71,6 +78,7 @@ const MainShell: React.FC = () => {
     try {
       const record = await fetchAuditById(auditId);
       setActiveRecord(record);
+      setCurrentPage('auditor');
     } catch {
       setActiveRecord(null);
       setAuditLoadError(true);
@@ -86,12 +94,13 @@ const MainShell: React.FC = () => {
     }
 
     const onPopState = () => {
-      const nextId = readAuditIdFromUrl();
-      if (nextId) {
-        void loadAuditFromId(nextId);
+      const nextAuditId = readAuditIdFromUrl();
+      if (nextAuditId) {
+        void loadAuditFromId(nextAuditId);
       } else {
         setActiveRecord(null);
         setAuditLoadError(false);
+        setCurrentPage(readPageFromUrl());
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -111,6 +120,7 @@ const MainShell: React.FC = () => {
   const openRecord = (record: AuditExtractionRecord) => {
     setActiveRecord(record);
     setAuditLoadError(false);
+    setCurrentPage('auditor');
     const targetUrl = `/?audit=${encodeURIComponent(record.auditId)}`;
     if (window.location.search !== `?audit=${encodeURIComponent(record.auditId)}`) {
       window.history.pushState({}, '', targetUrl);
@@ -118,48 +128,22 @@ const MainShell: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const resetToUpload = () => {
+  const handleSelectPage = (page: PageView) => {
     setActiveRecord(null);
     setAuditLoadError(false);
-    setWorkspaceMode('auditor');
-    if (window.location.search || window.location.pathname !== '/') {
-      window.history.pushState({}, '', '/');
-    }
+    setCurrentPage(page);
+    const targetUrl = page === 'home' ? '/' : `/?page=${page}`;
+    window.history.pushState({}, '', targetUrl);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const scrollToWorkspaceCard = () => {
-    window.requestAnimationFrame(() => {
-      const el = document.getElementById('workspace-card-top');
-      if (el) {
-        const y = el.getBoundingClientRect().top + window.scrollY - 16;
-        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-      }
-    });
-  };
-
-  const jumpToMode = (mode: WorkspaceMode) => {
+  const resetToUpload = () => {
     setActiveRecord(null);
     setAuditLoadError(false);
-    setWorkspaceMode(mode);
-    if (window.location.search || window.location.pathname !== '/') {
-      window.history.pushState({}, '', '/');
-    }
-    scrollToWorkspaceCard();
+    setCurrentPage('auditor');
+    window.history.pushState({}, '', '/?page=audit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const didMountRef = useRef(false);
-  useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-    if (activeRecord) {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    } else {
-      scrollToWorkspaceCard();
-    }
-  }, [workspaceMode, activeRecord]);
 
   const handleRunLiveSample = async () => {
     setLoadingAudit(true);
@@ -180,11 +164,10 @@ const MainShell: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper text-ink-primary">
       <Navbar
-        activeMode={activeRecord ? 'auditor' : workspaceMode}
-        onSelectMode={jumpToMode}
+        currentPage={activeRecord ? 'auditor' : currentPage}
+        onSelectPage={handleSelectPage}
         onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
         onOpenDonate={() => setDonateOpen(true)}
-        showLandingAnchors={!activeRecord}
       />
 
       {loadingAudit ? (
@@ -224,123 +207,75 @@ const MainShell: React.FC = () => {
           onReset={resetToUpload}
           onOpenDonate={() => setDonateOpen(true)}
         />
-      ) : (
+      ) : currentPage === 'home' ? (
+        /* HOME / LANDING VIEW */
         <main className="flex-1">
-          {/* Dark Forest Hero Section (matching Image 2) */}
+          {/* Hero Section: Clean & Focused Presentation */}
           <section className="bg-forest text-white">
-            <div className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-12">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-signal">
-                {isUk
-                  ? 'ПЕРЕВІРКА ТА КОНСТРУКТОР ДОГОВОРІВ ДЛЯ ФОП'
-                  : 'CONTRACT CHECK FOR FREELANCERS'}
+            <div className="mx-auto max-w-4xl px-4 py-14 text-center sm:px-6 sm:py-20">
+              {/* Kicker: Orange */}
+              <p className="inline-block font-mono text-[11px] font-semibold uppercase tracking-widest text-signal sm:text-xs">
+                {isUk ? 'ПІДПИСУЙТЕ З ВІДКРИТИМИ ОЧИМА' : 'SIGN WITH YOUR EYES OPEN'}
               </p>
 
-              <div className="mt-3 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                <div className="max-w-2xl">
-                  <h1 className="font-display text-4xl font-extrabold leading-[1.03] tracking-tight text-white sm:text-5xl lg:text-[56px]">
-                    {isUk ? (
-                      <>
-                        Підписуйте з
-                        <br />
-                        відкритими очима.
-                      </>
-                    ) : (
-                      <>
-                        Sign with your
-                        <br />
-                        eyes open.
-                      </>
-                    )}
-                  </h1>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-forest-muted sm:text-base">
-                    {isUk
-                      ? 'Завантажте MSA, NDA чи SOW або зберіть договір з перевірених пунктів ФОП. За хвилину ви отримаєте рейтинг ризиків, пояснення простою мовою та готові формулювання для переговорів.'
-                      : 'Upload an MSA, NDA or SOW — or assemble one from vetted FOP clauses. In about a minute you get every risky clause ranked, explained in plain words, with replacement wording you can send back.'}
-                  </p>
-                </div>
+              {/* Main Heading: Large White */}
+              <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                {isUk ? (
+                  <>
+                    Перевірка та конструктор
+                    <br />
+                    договорів для ФОП.
+                  </>
+                ) : (
+                  <>
+                    Contract verification &amp;
+                    <br />
+                    builder for freelancers.
+                  </>
+                )}
+              </h1>
 
-                {/* Workspace Mode Switcher Pills (Single proportional row on mobile & desktop) */}
-                <div
-                  ref={workspaceRef}
-                  className="grid w-full grid-cols-3 items-center gap-1 rounded-full border border-forest-border bg-forest-deep p-1 sm:inline-flex sm:w-auto sm:shrink-0 sm:gap-1.5"
+              {/* Subtitle */}
+              <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-forest-muted sm:text-base">
+                {isUk
+                  ? 'Завантажте MSA, NDA чи SOW або зберіть договір з перевірених пунктів ФОП. За хвилину ви отримаєте рейтинг ризиків, пояснення простою мовою та готові формулювання для переговорів.'
+                  : 'Upload an MSA, NDA or SOW — or assemble one from vetted FOP clauses. In about a minute you get every risky clause ranked, explained in plain words, with replacement wording you can send back.'}
+              </p>
+
+              {/* Action Buttons to open the respective tools */}
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleSelectPage('auditor')}
+                  className="inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3.5 text-xs font-bold text-white shadow-xl shadow-signal/30 transition-all hover:bg-signal-hover hover:scale-[1.02]"
                 >
-                  {(
-                    [
-                      ['auditor', isUk ? 'Аудит договору' : 'Audit contract'],
-                      ['reconcile', isUk ? 'Звірка з чатом' : 'Chat vs SOW'],
-                      ['builder', isUk ? 'Зібрати договір' : 'Assemble contract'],
-                    ] as const
-                  ).map(([modeId, label]) => {
-                    const active = workspaceMode === modeId;
-                    return (
-                      <button
-                        key={modeId}
-                        type="button"
-                        onClick={() => setWorkspaceMode(modeId)}
-                        className={`truncate rounded-full px-2 py-2 text-center text-[11px] font-semibold transition-colors sm:px-4 sm:py-1.5 sm:text-xs ${
-                          active
-                            ? 'bg-signal text-white'
-                            : 'text-forest-muted hover:text-white'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                  <FileCheck className="h-4 w-4" aria-hidden="true" />
+                  <span>{isUk ? 'Перевірити договір' : 'Audit contract'}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectPage('reconcile')}
+                  className="inline-flex items-center gap-2 rounded-full border border-forest-border bg-forest-deep px-5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft"
+                >
+                  <MessageSquareText className="h-4 w-4 text-forest-muted" aria-hidden="true" />
+                  <span>{isUk ? 'Звірка з чатом' : 'Chat vs SOW'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectPage('builder')}
+                  className="inline-flex items-center gap-2 rounded-full border border-forest-border bg-forest-deep px-5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft"
+                >
+                  <Layers className="h-4 w-4 text-forest-muted" aria-hidden="true" />
+                  <span>{isUk ? 'Зібрати договір' : 'Assemble contract'}</span>
+                </button>
               </div>
-
-              {/* Hero Workspace Area */}
-              {workspaceMode === 'auditor' ? (
-                <div id="workspace-card-top" className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-                  {/* Left: White Upload Card */}
-                  <div className="rounded-xl bg-white p-5 shadow-2xl shadow-black/25 sm:p-6 lg:col-span-6">
-                    {user && recentAudits.length > 0 && (
-                      <div className="mb-5 border-b border-paper-border pb-4">
-                        <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-                          {t.recentAudits.title}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {recentAudits.slice(0, 4).map((item) => (
-                            <button
-                              key={item.auditId}
-                              type="button"
-                              onClick={() => void loadAuditFromId(item.auditId)}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-paper-border bg-paper px-3 py-1 text-xs font-medium text-ink-primary hover:border-signal hover:text-signal"
-                            >
-                              <span className="max-w-[140px] truncate">{item.fileName}</span>
-                              {item.overallRiskScore !== null && (
-                                <span className="font-mono text-[10px] text-ink-muted">
-                                  {item.overallRiskScore}/100
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <UploadZone onExtracted={openRecord} />
-                  </div>
-
-                  {/* Right: Immersive Interactive Sample Scan Card */}
-                  <div className="lg:col-span-6 lg:pt-4">
-                    <LiveClauseSpecimen onRunSample={() => void handleRunLiveSample()} />
-                  </div>
-                </div>
-              ) : (
-                <div id="workspace-card-top" className="mt-8 rounded-xl bg-white p-5 text-ink-primary shadow-2xl shadow-black/25 sm:p-7">
-                  {workspaceMode === 'reconcile' ? (
-                    <SowReconciliationView onOpenAuditRecord={openRecord} />
-                  ) : (
-                    <ContractBuilderView initialTemplateId={builderTemplateOverride} />
-                  )}
-                </div>
-              )}
             </div>
           </section>
 
-          {/* Full-Width Signal Orange Marquee Ticker (matching Image 2) */}
+          {/* Full-Width Signal Orange Marquee Ticker */}
           <div className="overflow-hidden bg-signal py-2.5 text-forest-deep">
             <div className="animate-cg-marquee font-mono text-xs font-bold tracking-widest">
               {[...marqueeWords, ...marqueeWords, ...marqueeWords].map((word, idx) => (
@@ -352,14 +287,31 @@ const MainShell: React.FC = () => {
             </div>
           </div>
 
-          {/* Three steps, about a minute (Light Paper Section) */}
+          {/* Photo 1: Three steps, about a minute (Light Paper Section) */}
           <section id="how-it-works" className="bg-paper px-4 py-14 sm:px-6 sm:py-16">
-            <div className="mx-auto max-w-6xl">
-              <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-primary sm:text-3xl">
-                {isUk ? 'Три кроки, близько хвилини' : 'Three steps, about a minute'}
-              </h2>
+            <div className="mx-auto max-w-5xl">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                  <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink-primary sm:text-3xl">
+                    {isUk ? 'Три кроки, близько хвилини' : 'Three steps, about a minute'}
+                  </h2>
+                  <p className="mt-1 text-sm text-ink-secondary">
+                    {isUk
+                      ? 'Простий та зрозумілий процес для кожного IT-спеціаліста чи фрілансера.'
+                      : 'Simple and fast workflow designed for freelancers and small teams.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelectPage('auditor')}
+                  className="inline-flex items-center gap-1.5 self-start font-mono text-xs font-semibold text-signal hover:underline sm:self-auto"
+                >
+                  <span>{isUk ? 'Спробувати зараз' : 'Try it now'}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
 
-              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
                 {(
                   [
                     [
@@ -387,67 +339,226 @@ const MainShell: React.FC = () => {
                 ).map(([num, title, desc]) => (
                   <div
                     key={num}
-                    className="rounded-xl border border-paper-border bg-white p-6 transition-colors hover:border-paper-strong"
+                    className="rounded-xl border border-paper-border bg-white p-6 shadow-sm transition-all hover:border-paper-strong hover:shadow-md"
                   >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-forest font-mono text-xs font-bold text-white">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-forest font-mono text-xs font-bold text-white">
                       {num}
                     </span>
                     <h3 className="mt-4 font-display text-base font-bold text-ink-primary">
                       {title}
                     </h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">{desc}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{desc}</p>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          {/* Dark Forest Privacy Section ("Your contract stays yours.") */}
+          {/* Photo 2: Dark Forest Privacy Section ("Your contract stays yours.") */}
           <section id="privacy" className="bg-forest px-4 py-14 text-white sm:px-6 sm:py-16">
-            <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-5xl">
               <h2 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                 {isUk ? 'Ваш договір залишається вашим.' : 'Your contract stays yours.'}
               </h2>
 
-              <div className="mt-7 grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div>
+              <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="rounded-xl border border-forest-border bg-forest-deep/60 p-5">
                   <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
                     {isUk ? 'Видалення за 24 години' : 'Deleted after 24 hours'}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                  <p className="mt-2 text-sm leading-relaxed text-forest-muted">
                     {isUk
                       ? 'Завантажений файл та результати аналізу автоматично видаляються.'
                       : 'The file and the analysis are removed automatically.'}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-xl border border-forest-border bg-forest-deep/60 p-5">
                   <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
                     {isUk ? 'Шифрування на сервері' : 'Encrypted at rest'}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                  <p className="mt-2 text-sm leading-relaxed text-forest-muted">
                     {isUk
                       ? 'Файлове сховище та база даних зашифровані.'
                       : 'Storage and database are both encrypted.'}
                   </p>
                 </div>
-                <div>
+                <div className="rounded-xl border border-forest-border bg-forest-deep/60 p-5">
                   <h3 className="font-mono text-xs font-semibold text-[#52C48A]">
                     {isUk ? 'Без тексту в логах' : 'No text in logs'}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
+                  <p className="mt-2 text-sm leading-relaxed text-forest-muted">
                     {isUk
                       ? 'Текст вашого договору ніколи не записується у серверні логи.'
                       : 'Contract text is never written to our logs.'}
                   </p>
                 </div>
               </div>
+
+              {/* Bottom Quick CTA */}
+              <div className="mt-12 flex flex-col items-center justify-between gap-4 rounded-xl border border-forest-border bg-forest-deep p-6 sm:flex-row sm:p-8">
+                <div>
+                  <h3 className="font-display text-lg font-bold text-white sm:text-xl">
+                    {isUk
+                      ? 'Готові захистити свій договір?'
+                      : 'Ready to audit your contract?'}
+                  </h3>
+                  <p className="mt-1 text-xs text-forest-muted sm:text-sm">
+                    {isUk
+                      ? 'Безкоштовно, без реєстрації та за лічені секунди.'
+                      : 'Free, no credit card required, ready in seconds.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelectPage('auditor')}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-signal px-6 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-signal-hover"
+                >
+                  <span>{isUk ? 'Почати аудит договору' : 'Start contract audit'}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </section>
+        </main>
+      ) : currentPage === 'auditor' ? (
+        /* DEDICATED AUDIT PAGE */
+        <main className="flex-1 bg-paper px-4 py-8 sm:px-6 sm:py-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-forest">
+                  {isUk ? 'ПЕРЕВІРКА ДОГОВОРІВ ДЛЯ ФОП · PDF / DOCX' : 'CONTRACT AUDIT WORKSPACE'}
+                </p>
+                <h1 className="mt-1 font-display text-2xl font-extrabold text-ink-primary sm:text-3xl">
+                  {isUk ? 'Аудит договору' : 'Contract Audit'}
+                </h1>
+                <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
+                  {isUk
+                    ? 'Завантажте договір або відкрийте тестовий зразок для миттєвого пошуку ризиків.'
+                    : 'Upload a contract or run a sample scan to identify financial and legal risks.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSelectPage('home')}
+                className="inline-flex self-start items-center gap-1.5 rounded-full border border-paper-border bg-white px-3.5 py-1.5 text-xs font-medium text-ink-secondary hover:border-paper-strong hover:text-ink-primary sm:self-auto"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{isUk ? 'На головну' : 'Back to Home'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+              {/* Left: Upload Card */}
+              <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-6 lg:col-span-6">
+                {user && recentAudits.length > 0 && (
+                  <div className="mb-5 border-b border-paper-border pb-4">
+                    <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                      {t.recentAudits.title}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentAudits.slice(0, 4).map((item) => (
+                        <button
+                          key={item.auditId}
+                          type="button"
+                          onClick={() => void loadAuditFromId(item.auditId)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-paper-border bg-paper px-3 py-1 text-xs font-medium text-ink-primary hover:border-signal hover:text-signal"
+                        >
+                          <span className="max-w-[140px] truncate">{item.fileName}</span>
+                          {item.overallRiskScore !== null && (
+                            <span className="font-mono text-[10px] text-ink-muted">
+                              {item.overallRiskScore}/100
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <UploadZone onExtracted={openRecord} />
+              </div>
+
+              {/* Right: Live Clause Specimen */}
+              <div className="rounded-xl border border-forest-border bg-forest p-5 text-white shadow-sm lg:col-span-6">
+                <LiveClauseSpecimen onRunSample={() => void handleRunLiveSample()} />
+              </div>
+            </div>
+          </div>
+        </main>
+      ) : currentPage === 'reconcile' ? (
+        /* DEDICATED RECONCILE PAGE (CHAT VS SOW) */
+        <main className="flex-1 bg-paper px-4 py-8 sm:px-6 sm:py-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-forest">
+                  {isUk ? 'SOW VS MESSENGER · АНАЛІЗ РОЗБІЖНОСТЕЙ' : 'AGREED CHAT VS CONTRACT SOW'}
+                </p>
+                <h1 className="mt-1 font-display text-2xl font-extrabold text-ink-primary sm:text-3xl">
+                  {isUk ? 'Звірка переписки з договором' : 'Reconciliation: Chat vs SOW'}
+                </h1>
+                <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
+                  {isUk
+                    ? 'Порівняйте текст домовленостей у Slack, Telegram чи Upwork з фінальним SOW або MSA.'
+                    : 'Compare agreed notes from chats against the drafted SOW to catch hidden discrepancies.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSelectPage('home')}
+                className="inline-flex self-start items-center gap-1.5 rounded-full border border-paper-border bg-white px-3.5 py-1.5 text-xs font-medium text-ink-secondary hover:border-paper-strong hover:text-ink-primary sm:self-auto"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{isUk ? 'На головну' : 'Back to Home'}</span>
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-7">
+              <SowReconciliationView onOpenAuditRecord={openRecord} />
+            </div>
+          </div>
+        </main>
+      ) : (
+        /* DEDICATED CONTRACT BUILDER PAGE */
+        <main className="flex-1 bg-paper px-4 py-8 sm:px-6 sm:py-10">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-forest">
+                  {isUk ? 'КОНСТРУКТОР ДОГОВОРІВ ДЛЯ ФОП · ПЕРЕВІРЕНІ ПУНКТИ' : 'VETTED B2B CONTRACT BUILDER'}
+                </p>
+                <h1 className="mt-1 font-display text-2xl font-extrabold text-ink-primary sm:text-3xl">
+                  {isUk ? 'Зібрати безпечний договір' : 'Contract Builder for FOP'}
+                </h1>
+                <p className="mt-1 text-xs text-ink-secondary sm:text-sm">
+                  {isUk
+                    ? '3 прості кроки: виберіть умови та шаблон, налаштуйте параметри і завантажте готовий договір.'
+                    : '3 simple steps: choose terms and template, review parameters, and download a vetted contract.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleSelectPage('home')}
+                className="inline-flex self-start items-center gap-1.5 rounded-full border border-paper-border bg-white px-3.5 py-1.5 text-xs font-medium text-ink-secondary hover:border-paper-strong hover:text-ink-primary sm:self-auto"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{isUk ? 'На головну' : 'Back to Home'}</span>
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-7">
+              <ContractBuilderView />
+            </div>
+          </div>
         </main>
       )}
 
       {/* Light Paper Footer with Support Bar */}
-      <footer className="bg-paper px-4 py-8 sm:px-6">
+      <footer className="border-t border-paper-border bg-paper px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-4">
           {!activeRecord && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-paper-border bg-white px-5 py-4">
