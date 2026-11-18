@@ -227,7 +227,7 @@ const MainShell: React.FC = () => {
               </p>
 
               {/* Main Heading: Large White */}
-              <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              <h1 className="mt-3 font-display text-2xl font-extrabold leading-tight tracking-tight text-white sm:mt-4 sm:text-4xl lg:text-5xl">
                 {isUk ? (
                   <>
                     Перевірка та конструктор
@@ -250,34 +250,36 @@ const MainShell: React.FC = () => {
                   : 'Upload an MSA, NDA or SOW — or assemble one from vetted FOP clauses. In about a minute you get every risky clause ranked, explained in plain words, with replacement wording you can send back.'}
               </p>
 
-              {/* Action Buttons to open the respective tools */}
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              {/* Action Buttons: Balanced layout on mobile */}
+              <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:mt-8 sm:flex-row sm:gap-3">
                 <button
                   type="button"
                   onClick={() => handleSelectPage('auditor')}
-                  className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-3.5 text-xs font-bold text-white transition-colors hover:bg-signal-hover"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-signal px-6 py-3.5 text-xs font-bold text-white transition-colors hover:bg-signal-hover sm:w-auto"
                 >
                   <FileCheck className="h-4 w-4" aria-hidden="true" />
                   <span>{isUk ? 'Перевірити договір' : 'Audit contract'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSelectPage('reconcile')}
-                  className="inline-flex items-center gap-2 rounded-full border border-forest-border bg-forest-deep px-5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft"
-                >
-                  <MessageSquareText className="h-4 w-4 text-forest-muted" aria-hidden="true" />
-                  <span>{isUk ? 'Звірка з чатом' : 'Chat vs SOW'}</span>
-                </button>
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPage('reconcile')}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-forest-border bg-forest-deep px-3.5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft sm:flex-none sm:px-5"
+                  >
+                    <MessageSquareText className="h-4 w-4 text-forest-muted" aria-hidden="true" />
+                    <span>{isUk ? 'Звірка з чатом' : 'Chat vs SOW'}</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSelectPage('builder')}
-                  className="inline-flex items-center gap-2 rounded-full border border-forest-border bg-forest-deep px-5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft"
-                >
-                  <Layers className="h-4 w-4 text-forest-muted" aria-hidden="true" />
-                  <span>{isUk ? 'Зібрати договір' : 'Assemble contract'}</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPage('builder')}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-forest-border bg-forest-deep px-3.5 py-3.5 text-xs font-semibold text-white transition-colors hover:border-white/30 hover:bg-forest-soft sm:flex-none sm:px-5"
+                  >
+                    <Layers className="h-4 w-4 text-forest-muted" aria-hidden="true" />
+                    <span>{isUk ? 'Зібрати договір' : 'Assemble contract'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </section>

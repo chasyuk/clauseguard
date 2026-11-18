@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-forest-border bg-forest/95 text-white backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-1.5 px-3 sm:h-16 sm:gap-2 sm:px-6">
         {/* Left: § clauseguard mark */}
         <button
           type="button"
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             §
           </span>
-          <span className="font-display text-base font-extrabold tracking-tight sm:text-lg">
+          <span className="font-display text-sm font-extrabold tracking-tight sm:text-lg">
             <span className="text-white">clause</span>
             <span className="text-signal">guard</span>
           </span>
@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Right actions: Lang switcher, Pricing/Pro, Auth */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           {/* UA / EN pill toggle */}
           <div
             className="inline-flex shrink-0 items-center rounded-full border border-forest-border bg-forest-deep p-0.5"
@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setLang('uk')}
-              className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:py-1 sm:text-[11px] ${
+              className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:py-1 sm:text-[11px] ${
                 lang === 'uk' ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
               }`}
             >
@@ -110,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setLang('en')}
-              className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:py-1 sm:text-[11px] ${
+              className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:py-1 sm:text-[11px] ${
                 lang === 'en' ? 'bg-white text-forest' : 'text-forest-muted hover:text-white'
               }`}
             >
@@ -118,20 +118,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Pricing Button */}
+          {/* Pricing Button: Desktop (Text) & Mobile (Compact Sparkles) */}
           <button
             type="button"
             onClick={onOpenPricing}
-            className="inline-flex items-center gap-1 rounded-full border border-forest-border bg-forest-deep px-3 py-1.5 text-xs font-semibold text-white/90 transition-colors hover:border-amber-400/40 hover:text-amber-200"
+            className="hidden items-center gap-1 rounded-full border border-forest-border bg-forest-deep px-3 py-1.5 text-xs font-semibold text-white/90 transition-colors hover:border-amber-400/40 hover:text-amber-200 sm:inline-flex"
           >
             <Sparkles className="h-3 w-3 text-signal" />
             <span>{isUk ? 'Тарифи' : 'Pricing'}</span>
           </button>
+          <button
+            type="button"
+            onClick={onOpenPricing}
+            className="inline-flex sm:hidden items-center justify-center rounded-full border border-forest-border bg-forest-deep p-1.5 text-signal hover:text-amber-300"
+            aria-label={isUk ? 'Тарифи' : 'Pricing'}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+          </button>
 
           {user ? (
             <div className="flex items-center gap-1.5 border-l border-forest-border pl-1.5 sm:gap-2 sm:pl-2.5">
-              <div className="hidden flex-col items-end sm:flex">
-                <span className="max-w-[120px] truncate font-mono text-xs font-medium text-white/90">
+              <div className="hidden flex-col items-end md:flex">
+                <span className="max-w-[110px] truncate font-mono text-xs font-medium text-white/90">
                   {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
                 </span>
                 <span className="font-mono text-[10px] text-forest-muted">
@@ -143,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={logout}
-                className="rounded-full border border-forest-border px-2.5 py-1 text-[11px] font-medium text-white transition-colors hover:bg-forest-soft sm:px-3 sm:py-1.5 sm:text-xs"
+                className="rounded-full border border-forest-border px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-forest-soft sm:px-3 sm:py-1.5 sm:text-xs"
               >
                 {t.nav.signOut}
               </button>
@@ -153,14 +161,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth('login')}
-                className="rounded-full px-2 py-1 text-[11px] font-medium text-forest-muted transition-colors hover:text-white sm:px-2.5 sm:py-1.5 sm:text-xs"
+                className="rounded-full bg-signal px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-signal-hover sm:bg-transparent sm:px-2.5 sm:py-1.5 sm:font-medium sm:text-forest-muted sm:hover:text-white"
               >
                 {t.nav.signIn}
               </button>
               <button
                 type="button"
                 onClick={() => onOpenAuth('signup')}
-                className="rounded-full bg-signal px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-signal-hover sm:px-3.5 sm:py-1.5 sm:text-xs"
+                className="hidden rounded-full bg-signal px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-signal-hover sm:inline-flex"
               >
                 {t.nav.signUp}
               </button>
@@ -170,7 +178,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile sub-navigation bar (4 clean tabs, 1 row) */}
-      <div className="border-t border-forest-border/60 bg-forest-deep/90 px-3 py-1.5 md:hidden">
+      <div className="border-t border-forest-border/60 bg-forest-deep/90 px-2 py-1.5 md:hidden">
         <nav className="grid grid-cols-4 gap-1 text-center" aria-label="Mobile Navigation">
           {navItems.map((item) => {
             const active = currentPage === item.id;

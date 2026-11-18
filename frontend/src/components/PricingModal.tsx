@@ -55,7 +55,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       aria-modal="true"
       aria-labelledby="pricing-modal-title"
     >
-      <div className="relative my-8 w-full max-w-3xl rounded-2xl border border-paper-border bg-white p-6 shadow-2xl sm:p-8">
+      <div className="relative my-8 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-paper-border bg-white p-5 shadow-2xl sm:p-8">
         {/* Close Button */}
         <button
           type="button"
