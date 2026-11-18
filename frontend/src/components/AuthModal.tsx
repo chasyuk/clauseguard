@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { ApiClientError, fetchAuthConfig } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -191,6 +191,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               <span>{t.auth.googleBtn}</span>
             </button>
           )}
+          <p className="mt-2.5 text-center text-[11px] leading-relaxed text-ink-muted bg-paper-soft/60 px-2 py-1.5 rounded border border-surface-border">
+            {t.auth.mobileTip}
+          </p>
         </div>
 
         <div className="my-4 flex items-center gap-3">
@@ -285,3 +288,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
     </div>
   );
 };
+

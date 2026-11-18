@@ -312,6 +312,8 @@ export const translations = {
       switchToSignUp: 'New here? Create a free account',
       switchToSignIn: 'Already have an account? Sign in',
       close: 'Close',
+      mobileTip:
+        'Opening via Telegram or Safari? If Google shows a blank screen, sign up with Email below or tap ••• > Open in Safari.',
     },
     donation: {
       title: 'Support ClauseGuard (Optional)',
@@ -322,6 +324,8 @@ export const translations = {
       donationSuccess: 'Thank you! Mock donation recorded:',
       suggested: 'Choose an amount (UAH)',
       close: 'Close',
+      mobileTip:
+        'Opening via Telegram or Safari? If Google shows a blank screen, sign up with Email below or tap ••• > Open in Safari.',
     },
   },
   uk: {
@@ -625,6 +629,8 @@ export const translations = {
       switchToSignUp: 'Немає акаунта? Створити безкоштовно',
       switchToSignIn: 'Вже зареєстровані? Увійти',
       close: 'Закрити',
+      mobileTip:
+        'Відкрили через Telegram або білий екран у Google? Зареєструйтесь через Email нижче або натисніть ••• > «Відкрити в Safari».',
     },
     donation: {
       title: 'Підтримати ClauseGuard (необов’язково)',
@@ -635,6 +641,8 @@ export const translations = {
       donationSuccess: 'Дякуємо! Тестовий донат зафіксовано:',
       suggested: 'Оберіть суму (грн)',
       close: 'Закрити',
+      mobileTip:
+        'Відкрили через Telegram або білий екран у Google? Зареєструйтесь через Email нижче або натисніть ••• > «Відкрити в Safari».',
     },
   },
 } as const;
