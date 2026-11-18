@@ -24,7 +24,7 @@ Parameters:
     Description: Secret key used to sign authentication JWT tokens
   MonobankJarUrl:
     Type: String
-    Default: https://send.monobank.ua/jar/your-jar-id
+    Default: https://send.monobank.ua/jar/8D84Pi88MN
     Description: Configurable Monobank Jar URL for optional user donations
   GoogleClientId:
     Type: String

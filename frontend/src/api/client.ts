@@ -284,3 +284,20 @@ export async function signInWithGoogle(
   });
   return handleResponse<{ token: string; user: PublicUser }>(res);
 }
+
+export async function reconcileTextAudit(
+  agreedChat: string,
+  sowText: string,
+  token: string | null,
+  fileName?: string,
+): Promise<AuditExtractionRecord> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/api/reconcile`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ agreedChat, sowText, fileName }),
+  });
+  return handleResponse<AuditExtractionRecord>(res);
+}

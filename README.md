@@ -1,10 +1,13 @@
-# ClauseGuard — AI B2B Contract Risk Auditor (v1 MVP)
+# ClauseGuard — B2B Contract Studio & AI Risk Auditor
 
-**ClauseGuard** helps Ukrainian IT freelancers (FOP Group 3) and boutique digital agencies (3–15 people) audit B2B service agreements (MSAs, NDAs, SOWs) in under 60 seconds, flag commercial traps, read 2-sentence plain-language summaries, copy balanced counter-clauses, and download a 1-page Executive Summary PDF.
+**ClauseGuard** is a serverless B2B contract platform built on **AWS** for independent IT contractors (including Ukrainian FOP Group 3 freelancers) and boutique digital agencies (3–15 people). It combines three integrated workflows powered by **Amazon Bedrock (`eu.amazon.nova-lite-v1:0`)**:
 
-- **100% Free to Use** — No paywall. Voluntary support via a configurable Monobank Jar link (plus built-in gateway adapters for WayForPay and LiqPay).
-- **Privacy First** — No paid OCR, encrypted at rest (SSE-S3 + DynamoDB encryption), 24-hour automatic deletion via S3 lifecycle & DynamoDB TTL, and zero contract text logged.
-- **Disclaimer:** ClauseGuard is an automated risk-screening tool and does not provide legal advice.
+1. **Context-Aware SOW & Chat Reconciliation** — Cross-references informal deal agreements from Slack/Telegram/Upwork against the formal Statement of Work (SOW) to catch hidden scope creep, shortened deadlines, reduced budgets, and unagreed penalties, generating ready-to-send diplomatic counter-replies.
+2. **AI Contract Builder & Vetted Clause Registry** — Assembles balanced B2B contracts (`Fixed-Price SOW`, `FOP Group 3 MSA`, `Time & Materials SOW`, `Mutual B2B NDA`) from lawyer-vetted modular clauses in Ukrainian, English, or Bilingual (`UA + EN`) with configurable negotiation posture and instant `.docx` & `.pdf` export.
+3. **Direct Contract File Audit (`.docx` & `.pdf`)** — Extracts clauses, evaluates commercial traps via Amazon Bedrock with 1x JSON schema retry and deterministic fallback, generates 2-sentence plain-language summaries, copyable counter-clauses, and a 1-page Executive Summary PDF.
+
+- **Live Demo (HTTPS via AWS CloudFront):** [https://d3clnevtf6tq79.cloudfront.net](https://d3clnevtf6tq79.cloudfront.net)
+- **AWS API Gateway Endpoint:** `https://6m3h2016l8.execute-api.eu-central-1.amazonaws.com/prod`
 
 ---
 
@@ -12,110 +15,86 @@
 
 ```text
 ClauseGuard/
-├── backend/                  # Node.js 20 + TypeScript API (Express + AWS Lambda adapter)
-│   ├── assets/fonts/         # Bundled Unicode fonts for Cyrillic & English 1-page PDF export
-│   ├── scripts/              # Sample generator + Phase 1–4 automated test suites
+├── backend/                  # Node.js 22 + TypeScript Serverless API (Express + AWS Lambda adapter)
+│   ├── assets/fonts/         # Bundled Unicode fonts for Cyrillic & English PDF generation
+│   ├── scripts/              # Sample generator + Phase 1–5 automated verification suites
 │   └── src/
-│       ├── ai/               # System prompt, Zod schema, 1x JSON retry, Bedrock & fallback engine
-│       ├── auth/             # Sign-up & Sign-in (scrypt password hash + HMAC-SHA256 JWT)
-│       ├── donation/         # Voluntary donation abstraction (Mock, Monobank, WayForPay, LiqPay)
+│       ├── ai/               # System prompt, Zod schema, Bedrock Nova Lite invoker & fallback analyzer
+│       ├── auth/             # Email Sign-Up/Sign-In (scrypt + HMAC-SHA256 JWT) & Google OAuth2
+│       ├── builder/          # Vetted Clause Registry (16 clauses, 4 templates), AI Builder & DOCX/PDF exporter
+│       ├── donation/         # Voluntary support & payment gateway adapters (Monobank Jar, WayForPay, LiqPay)
 │       ├── extraction/       # Magic-byte validation, mammoth (.docx), unpdf (.pdf), clause splitter
 │       ├── pdf/              # 1-page Executive Summary PDF generator (pdf-lib + fontkit)
-│       └── storage/          # Dual-mode store: DynamoDB + S3 in AWS / JSON locally
-├── frontend/                 # React 18 + Vite + Tailwind CSS (0px archival theme, EN/UA i18n)
-├── infra/                    # AWS SAM template (API Gateway, Lambda, S3 24h TTL, DynamoDB, Budget)
-├── samples/                  # 3 risky sample contracts (.docx/.pdf) + 1 scanned-PDF test file
-├── USER_FEEDBACK_REPORT.md   # User validation log & changelog template (4-point rubric)
+│       └── storage/          # AWS DynamoDB (users, audits, daily quota) + S3 (encrypted 24h uploads)
+├── frontend/                 # React 18 + TypeScript + Vite + Tailwind CSS (EN/UA i18n)
+├── infra/                    # AWS SAM / CloudFormation template & automated deploy script
+├── samples/                  # Sample B2B contracts (.docx / .pdf) for instant testing
+├── examples/                 # Realistic FOP & MSA sample contracts
+├── USER_FEEDBACK_REPORT.md   # User testing log & iteration report
 └── README.md
 ```
 
 ---
 
-## Running Locally (Zero AWS Account Required)
+## AWS Serverless Architecture
+
+All user authentication, AI contract analysis, SOW reconciliation, and contract assembly run through AWS (`eu-central-1`):
+
+- **Amazon CloudFront + S3** — Hosts the React SPA over HTTPS with Origin Access Control.
+- **Amazon API Gateway (HTTP API) + AWS Lambda (`nodejs22.x` ARM64)** — Serves all REST endpoints (`/api/auth/*`, `/api/reconcile`, `/api/builder/*`, `/api/extract`, `/api/audits/*`, `/api/my-audits`).
+- **Amazon Bedrock (`eu.amazon.nova-lite-v1:0`)** — Performs context-aware SOW discrepancy detection, contract risk auditing, and natural-language parameter extraction for the AI Contract Builder.
+- **Amazon DynamoDB (`On-Demand` + TTL)** — Stores registered user accounts (Email & Google OAuth), audit records, and daily AI quota counters with automatic 24-hour TTL expiration on contract audits.
+- **Amazon S3 (`SSE-S3` + 24h Lifecycle Rule)** — Temporarily stores uploaded contracts encrypted at rest and automatically purges them after 24 hours.
+- **AWS Budgets** — Enforces a $2.00/month cost alert threshold alongside the hard `DAILY_AUDIT_CAP` in DynamoDB.
+
+---
+
+## Running Locally
 
 ### Prerequisites
-- **Node.js 20+** (`node -v`)
+- **Node.js 20+ / 22+** (`node -v`)
 - **npm 10+** (`npm -v`)
 
-### 1. Install All Dependencies
+### 1. Install Dependencies
 ```bash
 npm run install:all
 ```
 
-### 2. Run All Automated Verification Suites (Phases 1–4)
+### 2. Run Automated Test Suites (Phases 1–5)
 ```bash
 npm run test:all
 ```
 
-### 3. Start Backend & Frontend
-Open **two terminal tabs** in the project root:
+### 3. Start Local Development Servers
+Open two terminals in the repository root:
 
-**Terminal 1 (Backend on `http://localhost:3001`):**
+**Terminal 1 — Backend API (`http://localhost:3001`):**
 ```bash
 npm run dev:backend
 ```
 
-**Terminal 2 (Frontend on `http://localhost:5173`):**
+**Terminal 2 — Frontend UI (`http://localhost:5173`):**
 ```bash
 npm run dev:frontend
 ```
 
-Open **`http://localhost:5173`** in your browser.
-- When AWS credentials are not configured locally, the backend automatically switches to `local_fallback` so you can test the entire UI, risk flags, counter-clauses, and 1-page PDF download for free.
-- To test against **live Amazon Bedrock** locally, configure `aws configure` and run:
-  ```bash
-  BEDROCK_MODE=bedrock AWS_REGION=us-east-1 BEDROCK_MODEL_ID=amazon.nova-lite-v1:0 npm run dev:backend
-  ```
-
 ---
 
-## Deploying to AWS (Step-by-Step Beginner Guide)
+## Deploying to AWS
 
-ClauseGuard runs 100% serverless inside AWS Free Tier / Free Credits (no NAT gateways, no RDS, no EC2 servers).
-
-### Step 1: Install Prerequisites
-1. Create an **IAM User** in AWS Console (`IAM → Users → Create user`), attach `AdministratorAccess` (for SAM deployment), create a CLI access key, and run:
+### Prerequisites
+1. Configure AWS CLI credentials with permissions for CloudFormation, Lambda, API Gateway, DynamoDB, S3, CloudFront, and Bedrock:
    ```bash
    aws configure
    ```
-   (Set default region to `us-east-1` or `eu-central-1`.)
-2. Install the **AWS SAM CLI**: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
-3. In the AWS Console, open **Amazon Bedrock → Model access** in your chosen region and confirm **Amazon Nova Lite (`amazon.nova-lite-v1:0`)** is enabled.
+2. Ensure **Amazon Nova Lite (`eu.amazon.nova-lite-v1:0` / `amazon.nova-lite-v1:0`)** is available in Amazon Bedrock in your target region (`eu-central-1` or `us-east-1`).
 
-### Step 2: Deploy Backend + Storage + Budget Alarm (1 Command)
+### One-Command Full Deployment
 ```bash
-cd infra
-sam build
-sam deploy --guided
+AWS_REGION=eu-central-1 \
+BEDROCK_MODEL_ID=eu.amazon.nova-lite-v1:0 \
+GOOGLE_CLIENT_ID=<your-google-oauth-client-id> \
+bash infra/deploy.sh
 ```
-During `--guided`:
-- Stack Name: `clauseguard-mvp`
-- AWS Region: `us-east-1` (or `eu-central-1`)
-- `BedrockModelId`: `amazon.nova-lite-v1:0` (swap anytime via 1 environment variable)
-- `DailyAuditCap`: `50` (hard cap on daily audits to protect your credits)
-- `BudgetAlertEmail`: your email address (triggers a $2.00/month cost alarm)
-- `JwtSecret`: any long random string
 
-SAM prints **`ApiEndpoint`** at the end (e.g., `https://abc123.execute-api.us-east-1.amazonaws.com/prod`).
-
-### Step 3: Deploy Frontend over HTTPS (AWS Amplify Hosting)
-1. Push this repository to GitHub/GitLab.
-2. Open **AWS Amplify Console → Create new app → Host web app**.
-3. Select the repository and set **App root directory** to `frontend`.
-4. Add environment variables in Amplify:
-   - `VITE_API_URL` = your SAM `ApiEndpoint` URL (no trailing slash)
-   - `VITE_MONOBANK_JAR_URL` = your real Monobank Jar URL (`https://send.monobank.ua/jar/...`)
-5. Deploy — Amplify gives you an instant HTTPS URL (`https://main.<app-id>.amplifyapp.com`).
-
----
-
-## Cost & Guardrails Summary
-- **Amazon Bedrock (`amazon.nova-lite-v1:0`):** ~$0.0008 per 10-page contract (~6.5K input + 1.8K output tokens).
-- **AWS Lambda, API Gateway HTTP API, DynamoDB On-Demand, S3 (24h auto-delete), Amplify:** Covered within AWS Free Tier limits for MVP traffic.
-- **Cost Protections:** `DAILY_AUDIT_CAP=50`, API Gateway throttling (`2 req/s`, burst `5`), S3 24h expiration rule, and a $2.00 monthly AWS Budget alarm.
-
----
-
-## Plugging In Real Ukrainian Payment Gateways (WayForPay / LiqPay / Monobank)
-1. **Monobank Jar (Active & Configurable):** Set `VITE_MONOBANK_JAR_URL` in `frontend/.env` and `MONOBANK_JAR_URL` in SAM parameters.
-2. **WayForPay / LiqPay (`backend/src/donation/donationProvider.ts`):** Ready-to-use HMAC-MD5 (`buildWayForPayDonationPayload`) and SHA-1 Base64 (`buildLiqPayDonationPayload`) checkout payload builders are already implemented. Set `WAYFORPAY_MERCHANT_ACCOUNT` + `WAYFORPAY_SECRET_KEY` or `LIQPAY_PUBLIC_KEY` + `LIQPAY_PRIVATE_KEY` in Lambda environment variables and switch the frontend donation request gateway from `'mock'` to `'wayforpay'` or `'liqpay'`.
+The script compiles the TypeScript backend, packages the Lambda bundle, deploys the CloudFormation stack (`infra/template.yaml`), builds the Vite frontend with `VITE_API_URL` pointing to the deployed API Gateway endpoint, uploads static assets to S3, and invalidates the CloudFront distribution cache.

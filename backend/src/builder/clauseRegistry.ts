@@ -481,9 +481,9 @@ export const BUILDER_SCENARIOS: BuilderScenarioPreset[] = [
     labelUk: 'SaaS MVP ($8,500 фіксований SOW)',
     templateId: 'TPL-FOP-SOW-FIXED',
     plainTextEn:
-      'Client: NordPay Fintech GmbH. Contractor: FOP Oleksandr Vlasyuk. Project: B2B Client Portal MVP (Next.js frontend, Node.js REST API, Stripe webhook billing). Price: $8,500 USD fixed, 40% upfront deposit, 60% after launch, pay within 10 days. Out of scope: iOS mobile app, SEO copywriting, DevOps infrastructure setup. Deadline: December 20, 2026. 2 rounds of UI revisions.',
+      'Client: NordPay Fintech GmbH. Contractor: FOP Olena Kovalenko. Project: B2B Client Portal MVP (Next.js frontend, Node.js REST API, Stripe webhook billing). Price: $8,500 USD fixed, 40% upfront deposit, 60% after launch, pay within 10 days. Out of scope: iOS mobile app, SEO copywriting, DevOps infrastructure setup. Deadline: December 20, 2026. 2 rounds of UI revisions.',
     plainTextUk:
-      'Замовник: NordPay Fintech GmbH. Виконавець: ФОП Олександр Власюк. Проєкт: B2B-портал клієнта MVP (Next.js фронтенд, Node.js API, інтеграція Stripe). Бюджет: $8,500 USD фіксовано, 40% передоплата, 60% після запуску, оплата 10 днів. Поза скоупом: мобільний додаток iOS, наповнення контентом, налаштування серверів. Дедлайн: 20 грудня 2026. 2 раунди правок дизайну.',
+      'Замовник: NordPay Fintech GmbH. Виконавець: ФОП Олена Коваленко. Проєкт: B2B-портал клієнта MVP (Next.js фронтенд, Node.js API, інтеграція Stripe). Бюджет: $8,500 USD фіксовано, 40% передоплата, 60% після запуску, оплата 10 днів. Поза скоупом: мобільний додаток iOS, наповнення контентом, налаштування серверів. Дедлайн: 20 грудня 2026. 2 раунди правок дизайну.',
   },
   {
     id: 'scenario-vagueness-trap',

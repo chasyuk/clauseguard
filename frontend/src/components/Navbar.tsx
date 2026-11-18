@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-export type WorkspaceMode = 'auditor' | 'builder' | 'library';
+export type WorkspaceMode = 'auditor' | 'reconcile' | 'builder';
 
 interface NavbarProps {
   activeMode?: WorkspaceMode;
@@ -24,8 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems: Array<[WorkspaceMode, string]> = [
     ['auditor', lang === 'uk' ? 'Аудит' : 'Audit'],
+    ['reconcile', lang === 'uk' ? 'Звірка з чатом' : 'Chat vs SOW'],
     ['builder', lang === 'uk' ? 'Зібрати договір' : 'Assemble'],
-    ['library', lang === 'uk' ? 'Клаузули' : 'Clauses'],
   ];
 
   return (
@@ -119,8 +119,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {user ? (
             <div className="flex items-center gap-2 border-l border-forest-border pl-2.5">
-              <span className="hidden max-w-[140px] truncate font-mono text-xs text-forest-muted sm:inline">
-                {user.email}
+              <span className="hidden max-w-[180px] truncate font-mono text-xs font-medium text-white/90 sm:inline">
+                {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
               </span>
               <button
                 type="button"

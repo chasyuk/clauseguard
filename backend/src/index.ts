@@ -30,7 +30,9 @@ import {
 import { config } from './config.js';
 import { DonationGateway, donationProvider } from './donation/donationProvider.js';
 import { ExtractionError } from './extraction/fileValidator.js';
+import { detectContractLanguage, splitIntoClauses } from './extraction/clauseSplitter.js';
 import { processContractUpload } from './extraction/pipeline.js';
+import { v4 as uuidv4 } from 'uuid';
 import { generateExecutiveSummaryPdf } from './pdf/executiveSummaryPdf.js';
 import {
   AuditRecord,
@@ -394,6 +396,54 @@ export function createApp(options?: { dailyAuditCap?: number }) {
         `attachment; filename="ClauseGuard_${assembled.templateId || 'Contract'}.pdf"`,
       );
       res.send(pdfBuffer);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // --- Direct Text SOW & Messenger Chat Reconciliation via Bedrock + DynamoDB ---
+  app.post('/api/reconcile', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = getOptionalUserId(req);
+      const agreedChat = String(req.body?.agreedChat ?? '').trim();
+      const sowText = String(req.body?.sowText ?? '').trim();
+      const fileName = String(req.body?.fileName ?? 'SOW_Reconciliation_Draft.docx').trim();
+      if (!sowText || sowText.length < 30) {
+        res.status(400).json({
+          error: 'INVALID_SOW_TEXT',
+          message: 'Please provide SOW / contract text (at least 30 characters) to reconcile.',
+        });
+        return;
+      }
+      const dealContext: DealContext = {
+        agreedScope: req.body?.agreedScope ? String(req.body.agreedScope) : agreedChat,
+        agreedTimeline: req.body?.agreedTimeline ? String(req.body.agreedTimeline) : undefined,
+        agreedPayment: req.body?.agreedPayment ? String(req.body.agreedPayment) : undefined,
+        agreedExclusions: req.body?.agreedExclusions ? String(req.body.agreedExclusions) : undefined,
+        rawNotes: agreedChat || undefined,
+      };
+      const language = detectContractLanguage(sowText);
+      const clauses = splitIntoClauses(sowText);
+      const now = new Date();
+      const expires = new Date(now.getTime() + config.auditTtlHours * 60 * 60 * 1000);
+      const record: AuditRecord = {
+        auditId: uuidv4(),
+        userId: userId ?? null,
+        fileName,
+        fileSizeBytes: Buffer.byteLength(sowText, 'utf-8'),
+        extension: 'docx',
+        pageCount: Math.max(1, Math.ceil(sowText.length / 2200)),
+        wordCount: sowText.split(/\s+/).filter(Boolean).length,
+        language,
+        clauses,
+        ...(hasDealContext(dealContext) ? { dealContext } : {}),
+        createdAt: now.toISOString(),
+        expiresAt: expires.toISOString(),
+        ttlEpochSeconds: Math.floor(expires.getTime() / 1000),
+      };
+      await saveAudit(record);
+      const analyzed = await runAnalysisOnAudit(record, options?.dailyAuditCap, dealContext);
+      res.status(201).json(analyzed);
     } catch (err) {
       next(err);
     }

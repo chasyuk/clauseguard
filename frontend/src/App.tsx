@@ -7,12 +7,12 @@ import {
   fetchMyAudits,
 } from './api/client';
 import { AuthModal } from './components/AuthModal';
-import { ClauseLibraryView } from './components/ClauseLibraryView';
 import { ContractBuilderView } from './components/ContractBuilderView';
 import { DonationModal } from './components/DonationModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
 import { Navbar, WorkspaceMode } from './components/Navbar';
 import { ResultsView } from './components/ResultsView';
+import { SowReconciliationView } from './components/SowReconciliationView';
 import { UploadZone } from './components/UploadZone';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
@@ -63,9 +63,7 @@ const MainShell: React.FC = () => {
   const [auditLoadError, setAuditLoadError] = useState(false);
   const [recentAudits, setRecentAudits] = useState<AuditSummaryItem[]>([]);
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('auditor');
-  const [builderTemplateOverride, setBuilderTemplateOverride] = useState<string | undefined>(
-    undefined,
-  );
+  const [builderTemplateOverride] = useState<string | undefined>(undefined);
 
   const loadAuditFromId = async (auditId: string) => {
     setLoadingAudit(true);
@@ -130,6 +128,16 @@ const MainShell: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const scrollToWorkspaceCard = () => {
+    window.requestAnimationFrame(() => {
+      const el = document.getElementById('workspace-card-top');
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }
+    });
+  };
+
   const jumpToMode = (mode: WorkspaceMode) => {
     setActiveRecord(null);
     setAuditLoadError(false);
@@ -137,10 +145,21 @@ const MainShell: React.FC = () => {
     if (window.location.search || window.location.pathname !== '/') {
       window.history.pushState({}, '', '/');
     }
-    window.setTimeout(() => {
-      workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 40);
+    scrollToWorkspaceCard();
   };
+
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    if (activeRecord) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } else {
+      scrollToWorkspaceCard();
+    }
+  }, [workspaceMode, activeRecord]);
 
   const handleRunLiveSample = async () => {
     setLoadingAudit(true);
@@ -248,8 +267,8 @@ const MainShell: React.FC = () => {
                   {(
                     [
                       ['auditor', isUk ? 'Аудит договору' : 'Audit contract'],
+                      ['reconcile', isUk ? 'Звірка з чатом' : 'Chat vs SOW'],
                       ['builder', isUk ? 'Зібрати договір' : 'Assemble contract'],
-                      ['library', isUk ? '16 клаузул' : 'Vetted clauses'],
                     ] as const
                   ).map(([modeId, label]) => {
                     const active = workspaceMode === modeId;
@@ -273,7 +292,7 @@ const MainShell: React.FC = () => {
 
               {/* Hero Workspace Area */}
               {workspaceMode === 'auditor' ? (
-                <div className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                <div id="workspace-card-top" className="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
                   {/* Left: White Upload Card */}
                   <div className="rounded-xl bg-white p-5 shadow-2xl shadow-black/25 sm:p-6 lg:col-span-6">
                     {user && recentAudits.length > 0 && (
@@ -310,16 +329,11 @@ const MainShell: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="mt-8 rounded-xl bg-white p-5 text-ink-primary shadow-2xl shadow-black/25 sm:p-7">
-                  {workspaceMode === 'builder' ? (
-                    <ContractBuilderView initialTemplateId={builderTemplateOverride} />
+                <div id="workspace-card-top" className="mt-8 rounded-xl bg-white p-5 text-ink-primary shadow-2xl shadow-black/25 sm:p-7">
+                  {workspaceMode === 'reconcile' ? (
+                    <SowReconciliationView onOpenAuditRecord={openRecord} />
                   ) : (
-                    <ClauseLibraryView
-                      onUseTemplate={(tplId) => {
-                        setBuilderTemplateOverride(tplId);
-                        setWorkspaceMode('builder');
-                      }}
-                    />
+                    <ContractBuilderView initialTemplateId={builderTemplateOverride} />
                   )}
                 </div>
               )}
@@ -359,14 +373,14 @@ const MainShell: React.FC = () => {
                       '2',
                       isUk ? 'Прочитайте рейтинг' : 'Read the ranking',
                       isUk
-                        ? 'Кожна клаузула отримує рівень ризику, пояснення у двох реченнях та точну цитату.'
+                        ? 'Кожен пункт договору отримує рівень ризику, пояснення у двох реченнях та точну цитату.'
                         : 'Every clause gets a severity, a two-sentence summary and the exact words that worry us.',
                     ],
                     [
                       '3',
                       isUk ? 'Надішліть правки' : 'Push back',
                       isUk
-                        ? 'Скопіюйте жорстку, збалансовану або м’яку контр-клаузулу й додайте у переговори.'
+                        ? 'Скопіюйте жорсткий, збалансований або м’який варіант правки й додайте у переговори.'
                         : 'Copy a firm, balanced or friendly counter-clause and send it with your comments.',
                     ],
                   ] as const
@@ -412,7 +426,7 @@ const MainShell: React.FC = () => {
                   </h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-forest-muted">
                     {isUk
-                      ? 'І файлове сховище S3, і база даних DynamoDB зашифровані.'
+                      ? 'Файлове сховище та база даних зашифровані.'
                       : 'Storage and database are both encrypted.'}
                   </p>
                 </div>

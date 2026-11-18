@@ -163,6 +163,8 @@ export interface GoogleTokenClaims {
   email: string;
   email_verified?: string | boolean;
   name?: string;
+  given_name?: string;
+  family_name?: string;
   aud?: string;
   iss?: string;
   exp?: string | number;
@@ -217,14 +219,26 @@ export async function authenticateWithGoogleIdToken(
   const normalizedEmail = claims.email.trim().toLowerCase();
   let user = await findUserByEmail(normalizedEmail);
 
+  const googleFullName = (
+    claims.name ||
+    [claims.given_name, claims.family_name].filter(Boolean).join(' ') ||
+    ''
+  ).trim();
+
   if (!user) {
-    const displayName = (claims.name || normalizedEmail.split('@')[0] || 'Google User').trim();
+    const displayName = googleFullName || normalizedEmail.split('@')[0] || 'Google User';
     user = {
       id: uuidv4(),
       name: displayName,
       email: normalizedEmail,
       passwordHash: `google-oauth:${crypto.randomBytes(24).toString('hex')}`,
       createdAt: new Date().toISOString(),
+    };
+    await saveUser(user);
+  } else if (googleFullName && user.name !== googleFullName) {
+    user = {
+      ...user,
+      name: googleFullName,
     };
     await saveUser(user);
   }

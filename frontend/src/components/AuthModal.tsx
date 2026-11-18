@@ -228,7 +228,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
+              className="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink-primary focus:border-signal focus:bg-white focus:outline-none"
             />
           </div>
 
@@ -243,7 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialMode, onClo
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-surface-border bg-surface-bg px-3 py-2 text-sm text-white focus:border-brand focus:outline-none"
+              className="mt-1 w-full rounded-md border border-paper-border bg-paper px-3 py-2 text-sm text-ink-primary focus:border-signal focus:bg-white focus:outline-none"
             />
           </div>
 

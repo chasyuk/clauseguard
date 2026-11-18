@@ -21,7 +21,7 @@ export const config = {
   dailyAuditCap: Number(process.env.DAILY_AUDIT_CAP ?? 50),
   jwtSecret: process.env.JWT_SECRET ?? 'dev-local-secret-change-in-prod',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
-  monobankJarUrl: process.env.MONOBANK_JAR_URL ?? 'https://send.monobank.ua/jar/your-jar-id',
+  monobankJarUrl: process.env.MONOBANK_JAR_URL ?? 'https://send.monobank.ua/jar/8D84Pi88MN',
   maxFileSizeBytes: 10 * 1024 * 1024, // 10 MB
   maxPages: 30,
   auditTtlHours: 24,

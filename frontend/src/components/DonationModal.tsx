@@ -22,7 +22,7 @@ export const DonationModal: React.FC<DonationModalProps> = ({ isOpen, onClose })
 
   const jarUrl =
     (import.meta.env.VITE_MONOBANK_JAR_URL as string | undefined) ||
-    'https://send.monobank.ua/jar/your-jar-id';
+    'https://send.monobank.ua/jar/8D84Pi88MN';
 
   const handleMockDonate = async () => {
     setError(null);

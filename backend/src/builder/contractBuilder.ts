@@ -65,25 +65,39 @@ export interface AssembledContractResult {
   fullContractText: string;
 }
 
+const optStr = z.preprocess(
+  (v) => (v === null || v === undefined ? undefined : String(v).trim() || undefined),
+  z.string().optional(),
+);
+const optNum = (min: number, max: number) =>
+  z.preprocess((v) => {
+    if (v === null || v === undefined || v === '') return undefined;
+    const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : undefined;
+  }, z.number().optional());
+
 const ExtractedDealPlanSchema = z.object({
-  recommendedTemplateId: z.string().optional(),
-  clientName: z.string().min(1).optional(),
-  contractorName: z.string().min(1).optional(),
-  projectTitle: z.string().min(1).optional(),
-  projectScope: z.string().min(3).optional(),
-  deliverablesList: z.string().min(2).optional(),
-  exclusions: z.string().optional(),
-  pricingModel: z.enum(['FIXED_PRICE', 'TIME_AND_MATERIALS']).optional(),
-  totalFee: z.string().optional(),
-  currency: z.string().optional(),
-  hourlyRate: z.string().optional(),
-  upfrontPercent: z.number().min(0).max(100).optional(),
-  paymentWindowDays: z.number().int().min(1).max(90).optional(),
-  acceptanceDays: z.number().int().min(1).max(30).optional(),
-  revisionRounds: z.number().int().min(0).max(10).optional(),
-  deadlineDate: z.string().optional(),
-  liabilityCapMonths: z.number().int().min(1).max(24).optional(),
-  governingLaw: z.string().optional(),
+  recommendedTemplateId: optStr,
+  clientName: optStr,
+  contractorName: optStr,
+  projectTitle: optStr,
+  projectScope: optStr,
+  deliverablesList: optStr,
+  exclusions: optStr,
+  pricingModel: z.preprocess(
+    (v) => (v === 'FIXED_PRICE' || v === 'TIME_AND_MATERIALS' ? v : undefined),
+    z.enum(['FIXED_PRICE', 'TIME_AND_MATERIALS']).optional(),
+  ),
+  totalFee: optStr,
+  currency: optStr,
+  hourlyRate: optStr,
+  upfrontPercent: optNum(0, 100),
+  paymentWindowDays: optNum(1, 90),
+  acceptanceDays: optNum(1, 30),
+  revisionRounds: optNum(0, 10),
+  deadlineDate: optStr,
+  liabilityCapMonths: optNum(1, 24),
+  governingLaw: optStr,
 });
 
 const BUILDER_EXTRACTION_PROMPT = `You are ClauseGuard Contract Architect. Extract structured deal parameters from a freelancer or digital agency's plain-text description.

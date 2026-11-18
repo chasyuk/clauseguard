@@ -122,7 +122,7 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
           <span className="h-2 w-2 animate-pulse rounded-full bg-[#52C48A]" aria-hidden="true" />
           <span>
             {isUk
-              ? 'ЗРАЗОК СКАНУ · 9 КЛАУЗУЛ · ЗА РИЗИКОМ'
+              ? 'ЗРАЗОК АНАЛІЗУ · 9 ПУНКТІВ · ЗА РИЗИКОМ'
               : 'SAMPLE SCAN · 9 CLAUSES · SORTED BY RISK'}
           </span>
         </div>
@@ -192,7 +192,7 @@ export const LiveClauseSpecimen: React.FC<LiveClauseSpecimenProps> = ({ onRunSam
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-forest-border pt-3">
         <p className="text-xs text-forest-muted">
           {isUk
-            ? 'Довша смужка — вищий ризик. Найгірші клаузули зверху.'
+            ? 'Довша смужка — вищий ризик. Найнебезпечніші пункти зверху.'
             : 'Longer bar, bigger risk. You see the worst clauses first.'}
         </p>
         {onRunSample && (

@@ -12,7 +12,7 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-amazon.nova-lite-v1:0}"
 DAILY_AUDIT_CAP="${DAILY_AUDIT_CAP:-50}"
 BUDGET_ALERT_EMAIL="${BUDGET_ALERT_EMAIL:-adolfvlasiuk@gmail.com}"
-MONOBANK_JAR_URL="${MONOBANK_JAR_URL:-https://send.monobank.ua/jar/your-jar-id}"
+MONOBANK_JAR_URL="${MONOBANK_JAR_URL:-https://send.monobank.ua/jar/8D84Pi88MN}"
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 JWT_SECRET="${JWT_SECRET:-$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")}"
 

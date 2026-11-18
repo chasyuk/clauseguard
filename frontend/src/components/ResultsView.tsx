@@ -65,6 +65,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const [highlightedIdx, setHighlightedIdx] = useState<number | null>(null);
   const [showRawClauses, setShowRawClauses] = useState(false);
   const [showDownloadPage, setShowDownloadPage] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [showDownloadPage, record.auditId]);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(() => formatCountdown(record.expiresAt));
@@ -358,7 +362,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <div className="mt-7 border-t border-forest-border pt-4">
               <p className="font-mono text-[10px] uppercase tracking-wider text-forest-muted">
                 {isUk
-                  ? 'МАПА КЛАУЗУЛ · ВИЩА СМУЖКА = ВИЩИЙ РИЗИК · НАТИСНІТЬ ДЛЯ ПЕРЕХОДУ'
+                  ? 'МАПА ПУНКТІВ · ВИЩА СМУЖКА = ВИЩИЙ РИЗИК · НАТИСНІТЬ ДЛЯ ПЕРЕХОДУ'
                   : 'CLAUSE MAP · TALLER MEANS RISKIER · TAP A BAR TO JUMP'}
               </p>
               <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:grid-cols-6 md:grid-cols-9">
@@ -629,7 +633,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             className="w-full rounded-full border border-paper-border bg-white py-3 text-xs font-semibold text-ink-primary transition-colors hover:border-paper-strong hover:bg-paper-soft"
           >
             {isUk
-              ? `Показати ще ${hiddenCount} клаузул`
+              ? `Показати ще ${hiddenCount} пунктів`
               : `Show ${hiddenCount} more clause${hiddenCount === 1 ? '' : 's'}`}
           </button>
         )}
@@ -649,10 +653,10 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             <span>
               {showRawClauses
                 ? isUk
-                  ? 'Сховати повний текст клаузул'
+                  ? 'Сховати повний текст пунктів'
                   : 'Hide raw extracted clauses'
                 : isUk
-                  ? `Показати всі ${record.clauses.length} розпізнаних клаузул`
+                  ? `Показати всі ${record.clauses.length} розпізнаних пунктів`
                   : `View all ${record.clauses.length} extracted clauses`}
             </span>
           </button>

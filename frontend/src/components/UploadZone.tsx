@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   Download,
   FileText,
   Loader2,
@@ -58,8 +56,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [samples, setSamples] = useState<SampleMetadata[]>([]);
-  const [showContextFields, setShowContextFields] = useState(false);
-  const [dealContext, setDealContext] = useState<DealContext>({
+  const [dealContext] = useState<DealContext>({
     rawNotes: '',
   });
 
@@ -138,20 +135,6 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
       setErrorMessage(mapErrorMessage(err));
     } finally {
       setLoadingStage(null);
-    }
-  };
-
-  const loadPresetContext = (mode: 'en' | 'uk') => {
-    if (mode === 'en') {
-      setDealContext({
-        rawNotes:
-          'Scope: Custom React/Node SaaS portal MVP (Auth, Billing, Admin Console) per approved sprint SOW. Timeline: 6-week delivery; 5 business days client review SLA; delays in client assets extend deadline. Payment: $8,500 USD total (40% upfront deposit, Net 14 calendar days unconditionally). Exclusions: Contractor pre-existing utility libraries, UI templates, and post-launch DevOps support excluded.',
-      });
-    } else {
-      setDealContext({
-        rawNotes:
-          'Скоуп: Розробка веб-кабінету та REST API інтеграції за узгодженим ТЗ (2 раунди правок). Дедлайн: 45 календарних днів від передоплати; 5 роб. днів на підписання Акта. Оплата: Передоплата 40%, фінал 10 банківських днів незалежно від кінцевих клієнтів. Виключення: Власні бібліотеки Виконавця залишаються за ФОП; IP переходить виключно після повної оплати.',
-      });
     }
   };
 
@@ -399,61 +382,6 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onExtracted }) => {
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Optional Project & Deal Context Accordion */}
-      <div className="border-t border-paper-border pt-3">
-        <button
-          type="button"
-          onClick={() => setShowContextFields((p) => !p)}
-          className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-ink-secondary hover:text-signal"
-        >
-          <span>{showContextFields ? t.dealContext.toggleHide : t.dealContext.toggleShow}</span>
-          {showContextFields ? (
-            <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
-        </button>
-
-        {showContextFields && (
-          <div className="mt-3 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-ink-secondary">{t.dealContext.subheading}</p>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => loadPresetContext('en')}
-                  className="rounded border border-paper-border bg-paper px-2 py-0.5 font-mono text-[10px] font-medium text-ink-primary hover:border-signal hover:text-signal"
-                >
-                  {t.dealContext.presetEnBtn}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => loadPresetContext('uk')}
-                  className="rounded border border-paper-border bg-paper px-2 py-0.5 font-mono text-[10px] font-medium text-ink-primary hover:border-signal hover:text-signal"
-                >
-                  {t.dealContext.presetUkBtn}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDealContext({ rawNotes: '' })}
-                  className="rounded border border-paper-border px-2 py-0.5 font-mono text-[10px] text-ink-muted hover:text-ink-primary"
-                >
-                  {t.dealContext.clearBtn}
-                </button>
-              </div>
-            </div>
-            <textarea
-              rows={3}
-              aria-label={t.dealContext.heading}
-              value={dealContext.rawNotes ?? ''}
-              onChange={(e) => setDealContext({ rawNotes: e.target.value })}
-              placeholder={t.dealContext.notesPlaceholder}
-              className="w-full rounded-lg border border-paper-border bg-paper/60 p-3 text-xs leading-relaxed text-ink-primary placeholder:text-ink-muted focus:border-signal focus:bg-white focus:outline-none"
-            />
-          </div>
-        )}
       </div>
 
       {/* Primary Signal Orange CTA */}
