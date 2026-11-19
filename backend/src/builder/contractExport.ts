@@ -174,14 +174,19 @@ export async function generateAssembledContractDocx(
   );
 
   const p = assembled.parameters;
+  const clientAddrUk = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
+  const contractorAddrUk = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
+  const clientAddrEn = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
+  const contractorAddrEn = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
+
   const sigRows = isUk
     ? [
         { left: 'ЗАМОВНИК:', right: 'ВИКОНАВЕЦЬ:', bold: true },
         { left: p.clientName, right: p.contractorName, bold: true },
-        { left: `Адреса: ${p.clientAddress || '[Юридична адреса]'}`, right: `Адреса: ${p.contractorAddress || '[Юридична адреса]'}`, bold: false },
-        { left: `Код ЄДРПОУ: ${p.clientTaxId || '___________________'}`, right: `РНОКПП / ЄДРПОУ: ${p.contractorTaxId || '________________'}`, bold: false },
-        { left: `IBAN: ${p.clientIban || '___________________________'}`, right: `IBAN: ${p.contractorIban || '___________________________'}`, bold: false },
-        { left: `Банк: ${p.clientBank || '___________________________'}`, right: `Банк: ${p.contractorBank || '___________________________'}`, bold: false },
+        { left: `Адреса: ${clientAddrUk}`, right: `Адреса: ${contractorAddrUk}`, bold: false },
+        { left: `Код ЄДРПОУ: ${p.clientTaxId?.trim() ? p.clientTaxId.trim() : '___________________'}`, right: `РНОКПП / ЄДРПОУ: ${p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '________________'}`, bold: false },
+        { left: `IBAN: ${p.clientIban?.trim() ? p.clientIban.trim() : '___________________________'}`, right: `IBAN: ${p.contractorIban?.trim() ? p.contractorIban.trim() : '___________________________'}`, bold: false },
+        { left: `Банк: ${p.clientBank?.trim() ? p.clientBank.trim() : '___________________________'}`, right: `Банк: ${p.contractorBank?.trim() ? p.contractorBank.trim() : '___________________________'}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Підпис: _________________________', right: 'Підпис: _________________________', bold: false },
         { left: `        / ${p.clientName} /`, right: `        / ${p.contractorName} /`, bold: false },
@@ -190,10 +195,10 @@ export async function generateAssembledContractDocx(
     : [
         { left: 'CLIENT:', right: 'CONTRACTOR:', bold: true },
         { left: p.clientName, right: p.contractorName, bold: true },
-        { left: `Address: ${p.clientAddress || '[Legal Address]'}`, right: `Address: ${p.contractorAddress || '[Legal Address]'}`, bold: false },
-        { left: `Tax ID: ${p.clientTaxId || '__________________________'}`, right: `Tax ID: ${p.contractorTaxId || '__________________________'}`, bold: false },
-        { left: `Account: ${p.clientIban || '_________________________'}`, right: `Account: ${p.contractorIban || '_________________________'}`, bold: false },
-        { left: `Bank: ${p.clientBank || '____________________________'}`, right: `Bank: ${p.contractorBank || '____________________________'}`, bold: false },
+        { left: `Address: ${clientAddrEn}`, right: `Address: ${contractorAddrEn}`, bold: false },
+        { left: `Tax ID: ${p.clientTaxId?.trim() ? p.clientTaxId.trim() : '__________________________'}`, right: `Tax ID: ${p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '__________________________'}`, bold: false },
+        { left: `Account: ${p.clientIban?.trim() ? p.clientIban.trim() : '_________________________'}`, right: `Account: ${p.contractorIban?.trim() ? p.contractorIban.trim() : '_________________________'}`, bold: false },
+        { left: `Bank: ${p.clientBank?.trim() ? p.clientBank.trim() : '____________________________'}`, right: `Bank: ${p.contractorBank?.trim() ? p.contractorBank.trim() : '____________________________'}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Signature: _______________________', right: 'Signature: _______________________', bold: false },
         { left: `           / ${p.clientName} /`, right: `           / ${p.contractorName} /`, bold: false },
@@ -376,14 +381,23 @@ export async function generateAssembledContractPdf(
   const col2X = marginX + colWidth + 20;
 
   const p = assembled.parameters;
+  const clientAddr = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
+  const contractorAddr = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
+  const clientTax = p.clientTaxId?.trim() ? p.clientTaxId.trim() : '____________';
+  const contractorTax = p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '________________';
+  const clientIban = p.clientIban?.trim() ? p.clientIban.trim() : '___________________________';
+  const contractorIban = p.contractorIban?.trim() ? p.contractorIban.trim() : '___________________________';
+  const clientBank = p.clientBank?.trim() ? p.clientBank.trim() : '___________________________';
+  const contractorBank = p.contractorBank?.trim() ? p.contractorBank.trim() : '___________________________';
+
   const leftLines = isUk
     ? [
         'ЗАМОВНИК:',
         p.clientName,
-        `Адреса: ${p.clientAddress || '[Вкажіть юридичну адресу]'}`,
-        `Код ЄДРПОУ / РНОКПП: ${p.clientTaxId || '____________'}`,
-        `IBAN: ${p.clientIban || '___________________________'}`,
-        `Банк: ${p.clientBank || '___________________________'}`,
+        `Адреса: ${clientAddr}`,
+        `Код ЄДРПОУ / РНОКПП: ${clientTax}`,
+        `IBAN: ${clientIban}`,
+        `Банк: ${clientBank}`,
         '',
         'Підпис: _________________________',
         `        / ${p.clientName} /`,
@@ -392,10 +406,10 @@ export async function generateAssembledContractPdf(
     : [
         'CLIENT:',
         p.clientName,
-        `Address: ${p.clientAddress || '[Legal Address]'}`,
-        `Tax ID: ${p.clientTaxId || '__________________________'}`,
-        `Account: ${p.clientIban || '_________________________'}`,
-        `Bank: ${p.clientBank || '____________________________'}`,
+        `Address: ${clientAddr}`,
+        `Tax ID: ${clientTax}`,
+        `Account: ${clientIban}`,
+        `Bank: ${clientBank}`,
         '',
         'Signature: _______________________',
         `           / ${p.clientName} /`,
@@ -405,10 +419,10 @@ export async function generateAssembledContractPdf(
     ? [
         'ВИКОНАВЕЦЬ:',
         p.contractorName,
-        `Адреса: ${p.contractorAddress || '[Вкажіть юридичну адресу]'}`,
-        `РНОКПП / ЄДРПОУ: ${p.contractorTaxId || '________________'}`,
-        `IBAN: ${p.contractorIban || '___________________________'}`,
-        `Банк: ${p.contractorBank || '___________________________'}`,
+        `Адреса: ${contractorAddr}`,
+        `РНОКПП / ЄДРПОУ: ${contractorTax}`,
+        `IBAN: ${contractorIban}`,
+        `Банк: ${contractorBank}`,
         '',
         'Підпис: _________________________',
         `        / ${p.contractorName} /`,
@@ -417,10 +431,10 @@ export async function generateAssembledContractPdf(
     : [
         'CONTRACTOR:',
         p.contractorName,
-        `Address: ${p.contractorAddress || '[Legal Address]'}`,
-        `Tax ID: ${p.contractorTaxId || '__________________________'}`,
-        `Account: ${p.contractorIban || '_________________________'}`,
-        `Bank: ${p.contractorBank || '____________________________'}`,
+        `Address: ${contractorAddr}`,
+        `Tax ID: ${contractorTax}`,
+        `Account: ${contractorIban}`,
+        `Bank: ${contractorBank}`,
         '',
         'Signature: _______________________',
         `           / ${p.contractorName} /`,

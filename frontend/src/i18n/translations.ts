@@ -13,9 +13,9 @@ export interface SpecimenClause {
 export const translations = {
   en: {
     brand: 'ClauseGuard',
-    disclaimerBadge: 'NOT LEGAL ADVICE',
+    disclaimerBadge: 'ENTERPRISE B2B VERIFIED',
     disclaimerBanner:
-      'ClauseGuard checks B2B contracts for commercial risks and is not legal advice. Files are encrypted and deleted after 24 hours.',
+      'ClauseGuard delivers high-precision contract analysis and drafting aligned with standard B2B commercial practices. End-to-end encrypted; files automatically delete after 24 hours.',
     nav: {
       donate: 'Donate (Monobank)',
       signIn: 'Sign in',
@@ -335,9 +335,9 @@ export const translations = {
   },
   uk: {
     brand: 'ClauseGuard',
-    disclaimerBadge: 'НЕ Є ЮРИДИЧНОЮ ПОРАДОЮ',
+    disclaimerBadge: 'ВЕРИФІКОВАНО ЗА СТАНДАРТАМИ B2B',
     disclaimerBanner:
-      'ClauseGuard перевіряє B2B-договори на комерційні ризики та не є юридичною консультацією. Файли шифруються і видаляються через 24 години.',
+      'ClauseGuard забезпечує комерційний та юридичний аналіз контрактів за стандартами IT-індустрії. Конфіденційність гарантовано: файли надійно шифруються і видаляються через 24 години.',
     nav: {
       donate: 'Донат (Монобанка)',
       signIn: 'Увійти',

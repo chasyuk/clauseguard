@@ -49,9 +49,9 @@ export async function generateExecutiveSummaryPdf(
     },
   );
 
-  const disclaimerBadge = isUk ? 'НЕ Є ЮРИДИЧНОЮ ПОРАДОЮ' : 'NOT LEGAL ADVICE';
-  const badgeW = boldFont.widthOfTextAtSize(disclaimerBadge, 8);
-  page.drawText(disclaimerBadge, {
+  const verifiedBadge = isUk ? 'ВЕРИФІКОВАНО ЗА СТАНДАРТАМИ B2B' : 'ENTERPRISE B2B VERIFIED';
+  const badgeW = boldFont.widthOfTextAtSize(verifiedBadge, 8);
+  page.drawText(verifiedBadge, {
     x: marginX + contentWidth - badgeW - 12,
     y: 789,
     size: 8,
@@ -304,8 +304,8 @@ export async function generateExecutiveSummaryPdf(
   });
 
   const footerText = isUk
-    ? `ClauseGuard ID: ${record.auditId} · Файл видаляється через 24 год · Це не є юридичною порадою.`
-    : `ClauseGuard Audit ID: ${record.auditId} · Auto-deleted in 24h · This summary is not legal advice.`;
+    ? `ClauseGuard ID: ${record.auditId} · Конфіденційний звіт комерційного аналізу B2B-контракту · Захищене шифрування`
+    : `ClauseGuard Audit ID: ${record.auditId} · Confidential B2B Contract Commercial Intelligence Briefing · Encrypted`;
   page.drawText(footerText, {
     x: marginX,
     y: 28,

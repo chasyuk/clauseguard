@@ -565,18 +565,18 @@ export async function assembleContractFromPlainText(
     (s, idx) => `РОЗДІЛ ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`,
   );
 
-  const clientAddr = parameters.clientAddress || '[Вкажіть юридичну адресу]';
-  const contractorAddr = parameters.contractorAddress || '[Вкажіть юридичну адресу]';
-  const clientCode = parameters.clientTaxId || '__________________';
-  const contractorCode = parameters.contractorTaxId || '______________________';
-  const clientIban = parameters.clientIban || '_________________________________';
-  const contractorIban = parameters.contractorIban || '_________________________________';
-  const clientBank = parameters.clientBank || '_________________________________';
-  const contractorBank = parameters.contractorBank || '_________________________________';
+  const clientAddr = parameters.clientAddress?.trim() ? parameters.clientAddress.trim() : '___________________________';
+  const contractorAddr = parameters.contractorAddress?.trim() ? parameters.contractorAddress.trim() : '___________________________';
+  const clientCode = parameters.clientTaxId?.trim() ? parameters.clientTaxId.trim() : '__________________';
+  const contractorCode = parameters.contractorTaxId?.trim() ? parameters.contractorTaxId.trim() : '______________________';
+  const clientIban = parameters.clientIban?.trim() ? parameters.clientIban.trim() : '_________________________________';
+  const contractorIban = parameters.contractorIban?.trim() ? parameters.contractorIban.trim() : '_________________________________';
+  const clientBank = parameters.clientBank?.trim() ? parameters.clientBank.trim() : '_________________________________';
+  const contractorBank = parameters.contractorBank?.trim() ? parameters.contractorBank.trim() : '_________________________________';
 
   const signatureBlock = isUkDisplay
     ? `РОЗДІЛ ${sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН\n\nЗАМОВНИК:\t\t\t\t\t\t\tВИКОНАВЕЦЬ:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nАдреса: ${clientAddr}\t\t\t\tАдреса: ${contractorAddr}\nКод ЄДРПОУ / РНОКПП: ${clientCode}\t\tРНОКПП / ЄДРПОУ: ${contractorCode}\nIBAN: ${clientIban}\t\t\tIBAN: ${contractorIban}\nБанк: ${clientBank}\t\t\tБанк: ${contractorBank}\n\nПідпис: _______________________________\t\t\tПідпис: _______________________________\n        / ${parameters.clientName} /\t\t\t\t        / ${parameters.contractorName} /\nМ.П.\t\t\t\t\t\t\t\t\t\tМ.П.`
-    : `SECTION ${sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES\n\nCLIENT:\t\t\t\t\t\t\t\tCONTRACTOR:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nAddress: ${parameters.clientAddress || '[Client Legal Address]'}\t\t\t\tAddress: ${parameters.contractorAddress || '[Contractor Legal Address]'}\nTax ID: ${parameters.clientTaxId || '[Company / Tax Code]'}\t\t\t\tTax ID: ${parameters.contractorTaxId || '[Tax / Registration Code]'}\nIBAN / Account: ${parameters.clientIban || '_______________________'}\t\tIBAN / Account: ${parameters.contractorIban || '_______________________'}\nBank: ${parameters.clientBank || '_______________________'}\t\t\tBank: ${parameters.contractorBank || '_______________________'}\n\nSignature: ____________________________\t\tSignature: ____________________________\n           / ${parameters.clientName} /\t\t\t\t           / ${parameters.contractorName} /`;
+    : `SECTION ${sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES\n\nCLIENT:\t\t\t\t\t\t\t\tCONTRACTOR:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nAddress: ${clientAddr}\t\t\t\tAddress: ${contractorAddr}\nTax ID: ${clientCode}\t\t\t\tTax ID: ${contractorCode}\nIBAN / Account: ${clientIban}\t\tIBAN / Account: ${contractorIban}\nBank: ${clientBank}\t\t\tBank: ${contractorBank}\n\nSignature: ____________________________\t\tSignature: ____________________________\n           / ${parameters.clientName} /\t\t\t\t           / ${parameters.contractorName} /`;
 
   const fullContractText = [headerBlock, ...bodyBlocks, signatureBlock].join('\n\n');
 
