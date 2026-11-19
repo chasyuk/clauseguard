@@ -60,6 +60,17 @@ const DEFAULT_PARAMS: ContractParameters = {
   governingLaw: 'Законодавство України / ЗЕД-контракт ФОП',
 };
 
+function formatUkrainianLegalDate(d: Date = new Date()): string {
+  const day = String(d.getDate()).padStart(2, '0');
+  const monthsUk = [
+    'січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня',
+  ];
+  const month = monthsUk[d.getMonth()] || 'січня';
+  const year = d.getFullYear();
+  return `«${day}» ${month} ${year} р.`;
+}
+
 function sanitizeScenarioText(text: string): string {
   return text
     .replace(/Oleksandr Vlasyuk/gi, 'Olena Kovalenko')
@@ -95,6 +106,9 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showFullPreview, setShowFullPreview] = useState(false);
+  const [contractViewMode, setContractViewMode] = useState<'paper' | 'modules'>('paper');
+  const [contractNumber, setContractNumber] = useState<string>('20');
+  const [contractCity, setContractCity] = useState<string>('ВІННИЦЯ');
 
   const didMountBuilderRef = useRef(false);
   useEffect(() => {
@@ -872,30 +886,52 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
       {/* STEP 3 (IN-PLACE): Assembled Contract + Export                        */}
       {/* ===================================================================== */}
       {wizardStep === 3 && assembled && (
-        <section className="space-y-4">
-          <div className="flex flex-col justify-between gap-3 border-b border-paper-border pb-4 sm:flex-row sm:items-center">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
-                  {assembled.templateId}
-                </span>
-                <span className="font-mono text-[11px] text-ink-muted">
-                  {t.builder.sourceEngine}: {assembled.modelId}
-                </span>
+        <section className="space-y-6">
+          {/* Top Action & View Toolbar */}
+          <div className="flex flex-col justify-between gap-4 border-b border-paper-border pb-4 lg:flex-row lg:items-center">
+            {/* View Mode Switcher */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-xl border border-paper-border bg-paper-soft p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setContractViewMode('paper')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    contractViewMode === 'paper'
+                      ? 'bg-white text-forest shadow-sm ring-1 ring-forest/20'
+                      : 'text-ink-secondary hover:text-ink-primary'
+                  }`}
+                >
+                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>{isUk ? '📄 Паперовий вигляд договору' : '📄 Official Paper View'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContractViewMode('modules')}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    contractViewMode === 'modules'
+                      ? 'bg-white text-forest shadow-sm ring-1 ring-forest/20'
+                      : 'text-ink-secondary hover:text-ink-primary'
+                  }`}
+                >
+                  <span>⚙️</span>
+                  <span>{isUk ? `Налаштування модулів (${assembled.sections.length})` : `Module Customizer (${assembled.sections.length})`}</span>
+                </button>
               </div>
-              <h3 className="mt-1.5 font-display text-xl font-bold text-ink-primary sm:text-2xl">
-                {assembled.templateTitle}
-              </h3>
+
+              <span className="hidden font-mono text-[11px] text-ink-muted sm:inline-block">
+                {assembled.templateId} · {assembled.modelId}
+              </span>
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setWizardStep(2)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-paper-border bg-paper px-3.5 py-2 text-xs font-semibold text-ink-primary transition-colors hover:border-paper-strong"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-paper-border bg-paper px-3 py-2 text-xs font-semibold text-ink-primary transition-colors hover:border-paper-strong"
               >
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{isUk ? 'Змінити параметри' : 'Edit parameters'}</span>
+                <span>{isUk ? 'Параметри' : 'Edit parameters'}</span>
               </button>
 
               <button
@@ -929,7 +965,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                 type="button"
                 disabled={exportingType !== null}
                 onClick={() => void handleDownload('docx')}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-signal px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-signal-hover disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-signal px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-signal-hover disabled:opacity-60 shadow-sm"
               >
                 {exportingType === 'docx' ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -943,7 +979,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                 type="button"
                 disabled={exportingType !== null}
                 onClick={() => void handleDownload('pdf')}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-forest px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-forest-deep disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-forest px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-forest-deep disabled:opacity-60 shadow-sm"
               >
                 {exportingType === 'pdf' ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -955,90 +991,295 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
             </div>
           </div>
 
-          {/* Individual Vetted Module Cards */}
-          <div className="space-y-4">
-            {assembled.sections.map((section, idx) => (
-              <article
-                key={section.module}
-                className="overflow-hidden rounded-xl border border-paper-border bg-white"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-paper-border bg-paper-soft px-4 py-2.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-sm border border-paper-border bg-white px-2 py-0.5 font-mono text-xs font-semibold text-ink-primary">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <span className="text-xs font-semibold text-ink-primary">{section.title}</span>
-                    <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
-                      {section.selectedClauseId}
-                    </span>
-                  </div>
-
-                  {/* Variant Switcher */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-mono text-[10px] text-ink-muted">
-                      {t.builder.swapVariantLabel}
-                    </span>
-                    {section.alternatives.map((alt) => {
-                      const active = alt.clauseId === section.selectedClauseId;
-                      return (
-                        <button
-                          key={alt.clauseId}
-                          type="button"
-                          onClick={() => handleSwapClauseVariant(section.module, alt.clauseId)}
-                          className={`rounded-md border px-2.5 py-0.5 font-mono text-[10px] font-semibold transition-colors ${
-                            active
-                              ? 'border-forest bg-forest text-white'
-                              : 'border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
-                          }`}
-                        >
-                          {alt.posture === 'CONTRACTOR_PROTECTIVE'
-                            ? t.library.postureProtective
-                            : t.library.postureBalanced}
-                        </button>
-                      );
-                    })}
-                  </div>
+          {/* VIEW 1: AUTHENTIC PAPER DOCUMENT VIEW */}
+          {contractViewMode === 'paper' && (
+            <div className="mx-auto max-w-4xl rounded-sm border border-stone-300 bg-white p-7 sm:p-14 md:p-16 shadow-2xl font-serif text-stone-900 leading-relaxed selection:bg-brand-subtle selection:text-brand-text">
+              {/* Document Header */}
+              <div className="text-center space-y-1.5 pb-2">
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wider text-stone-950 font-serif">
+                    {isUk ? 'ДОГОВІР №' : 'AGREEMENT NO.'}
+                  </h2>
+                  <input
+                    type="text"
+                    value={contractNumber}
+                    onChange={(e) => setContractNumber(e.target.value)}
+                    className="w-20 sm:w-24 border-b border-dotted border-stone-400 bg-transparent text-center text-xl sm:text-2xl font-bold uppercase tracking-wider text-stone-950 focus:border-forest focus:outline-none"
+                    title={isUk ? 'Редагувати номер договору' : 'Edit agreement number'}
+                  />
                 </div>
+                <p className="text-sm sm:text-base font-semibold text-stone-800 tracking-normal font-serif">
+                  {assembled.templateTitle}
+                </p>
+              </div>
 
-                <div className="grid grid-cols-1 divide-y divide-paper-border lg:grid-cols-12 lg:divide-x lg:divide-y-0">
-                  <div className="p-4 lg:col-span-8">
-                    <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-primary">
-                      {section.renderedText}
+              {/* Location & Date Row */}
+              <div className="flex flex-row justify-between items-center text-xs sm:text-sm font-semibold text-stone-800 border-b border-stone-200 pb-3 mb-6 mt-4">
+                <div className="flex items-center gap-1.5">
+                  <span>{isUk ? 'м.' : 'City:'}</span>
+                  <input
+                    type="text"
+                    value={contractCity}
+                    onChange={(e) => setContractCity(e.target.value)}
+                    className="w-28 sm:w-36 border-b border-dotted border-stone-400 bg-transparent px-1 py-0.5 text-xs sm:text-sm font-semibold text-stone-900 focus:border-forest focus:outline-none"
+                    title={isUk ? 'Натисніть, щоб змінити місто' : 'Click to edit city'}
+                  />
+                </div>
+                <div className="text-right">
+                  <span>
+                    {isUk
+                      ? formatUkrainianLegalDate()
+                      : new Date().toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Formal Preamble */}
+              <div className="text-justify indent-8 text-[13.5px] sm:text-[14px] leading-relaxed text-stone-900 space-y-2 mb-6">
+                {isUk ? (
+                  <>
+                    <p>
+                      <strong className="font-semibold text-stone-950">
+                        {assembled.parameters.clientName}
+                      </strong>
+                      , що діє на підставі статуту / реєстраційних документів (надалі – «Замовник» або «Клієнт»), з однієї сторони,
                     </p>
-                  </div>
-                  <div className="flex flex-col justify-between bg-paper-soft/50 p-4 lg:col-span-4">
-                    <div>
-                      <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand-text">
-                        {t.builder.rationalePrefix}
-                      </span>
-                      <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
-                        {section.rationale}
+                    <p>
+                      та{' '}
+                      <strong className="font-semibold text-stone-950">
+                        {assembled.parameters.contractorName}
+                      </strong>
+                      , що діє на підставі статуту / виписки з ЄДР (надалі – «Виконавець»), з іншої сторони,
+                    </p>
+                    <p>
+                      разом іменовані «Сторони», а кожна окремо – «Сторона», уклали даний Договір про наступне:
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <strong className="font-semibold text-stone-950">
+                        {assembled.parameters.clientName}
+                      </strong>{' '}
+                      (hereinafter referred to as the "Client"), of the first part,
+                    </p>
+                    <p>
+                      and{' '}
+                      <strong className="font-semibold text-stone-950">
+                        {assembled.parameters.contractorName}
+                      </strong>{' '}
+                      (hereinafter referred to as the "Contractor"), of the second part,
+                    </p>
+                    <p>
+                      collectively referred to as the "Parties" and individually as a "Party", have entered into this Agreement as follows:
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Numbered Sections */}
+              <div className="space-y-6">
+                {assembled.sections.map((section, idx) => {
+                  const cleanBody = section.renderedText.replace(/\[VETTED-[^\]]+\]/g, '').trim();
+                  const paragraphs = cleanBody.split('\n').filter((l) => l.trim().length > 0);
+
+                  return (
+                    <section key={section.module} className="group relative">
+                      <div className="mb-2.5 text-center">
+                        <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-950 font-serif">
+                          {isUk
+                            ? `РОЗДІЛ ${idx + 1}. ${section.title}`
+                            : `SECTION ${idx + 1}. ${section.title}`}
+                        </h3>
+                      </div>
+
+                      <div className="space-y-2 text-justify text-[13.5px] sm:text-[14px] leading-relaxed text-stone-900">
+                        {paragraphs.map((p, pIdx) => (
+                          <p key={pIdx} className="indent-8">
+                            {p.trim()}
+                          </p>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+
+              {/* Formal Signatures and Requisites Block */}
+              <div className="mt-12 pt-8 border-t border-stone-300">
+                <h3 className="text-center text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-950 mb-8 font-serif">
+                  {isUk
+                    ? `РОЗДІЛ ${assembled.sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН`
+                    : `SECTION ${assembled.sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES`}
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 text-[13px] sm:text-[13.5px] leading-relaxed text-stone-900">
+                  {/* Column 1: Client */}
+                  <div className="space-y-3 rounded border border-dashed border-stone-200 p-4 sm:p-5 bg-stone-50/50">
+                    <div className="font-bold uppercase tracking-wide text-stone-950 border-b border-stone-200 pb-1.5">
+                      {isUk ? 'ЗАМОВНИК (КЛІЄНТ):' : 'CLIENT:'}
+                    </div>
+                    <div className="font-semibold text-stone-950">{assembled.parameters.clientName}</div>
+                    <div className="text-stone-700 text-xs sm:text-[12.5px] space-y-1">
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'Адреса:' : 'Address:'}</span> [Вкажіть юридичну адресу]
+                      </p>
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'Код ЄДРПОУ / РНОКПП:' : 'Tax ID:'}</span> __________________
+                      </p>
+                      <p>
+                        <span className="text-stone-500">IBAN:</span> _________________________________
+                      </p>
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'Банк:' : 'Bank:'}</span> _________________________________
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void copyWithFeedback(section.module, section.renderedText)}
-                      className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-paper-border bg-white px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong"
-                    >
-                      {copiedKey === section.module ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-risk-lowText" aria-hidden="true" />
-                          <span>{t.specimen.copiedBtn}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span>{t.builder.copySectionBtn}</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="pt-6">
+                      <div className="flex items-end justify-between gap-2 border-b border-stone-400 pb-1">
+                        <span className="text-xs text-stone-500">{isUk ? 'Підпис:' : 'Signature:'}</span>
+                        <span className="font-semibold text-stone-950 text-xs sm:text-sm">
+                          / {assembled.parameters.clientName} /
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[11px] text-stone-400 text-right">
+                        {isUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Column 2: Contractor */}
+                  <div className="space-y-3 rounded border border-dashed border-stone-200 p-4 sm:p-5 bg-stone-50/50">
+                    <div className="font-bold uppercase tracking-wide text-stone-950 border-b border-stone-200 pb-1.5">
+                      {isUk ? 'ВИКОНАВЕЦЬ:' : 'CONTRACTOR:'}
+                    </div>
+                    <div className="font-semibold text-stone-950">{assembled.parameters.contractorName}</div>
+                    <div className="text-stone-700 text-xs sm:text-[12.5px] space-y-1">
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'Адреса:' : 'Address:'}</span> [Вкажіть юридичну адресу]
+                      </p>
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'РНОКПП / ЄДРПОУ:' : 'Tax ID:'}</span> __________________
+                      </p>
+                      <p>
+                        <span className="text-stone-500">IBAN:</span> _________________________________
+                      </p>
+                      <p>
+                        <span className="text-stone-500">{isUk ? 'Банк:' : 'Bank:'}</span> _________________________________
+                      </p>
+                    </div>
+                    <div className="pt-6">
+                      <div className="flex items-end justify-between gap-2 border-b border-stone-400 pb-1">
+                        <span className="text-xs text-stone-500">{isUk ? 'Підпис:' : 'Signature:'}</span>
+                        <span className="font-semibold text-stone-950 text-xs sm:text-sm">
+                          / {assembled.parameters.contractorName} /
+                        </span>
+                      </div>
+                      <div className="mt-1 text-[11px] text-stone-400 text-right">
+                        {isUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </article>
-            ))}
-          </div>
+              </div>
+            </div>
+          )}
 
-          {/* Collapsible Full Assembled Document */}
+          {/* VIEW 2: MODULAR CUSTOMIZER (ALTERNATIVE) */}
+          {contractViewMode === 'modules' && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-paper-border bg-paper-soft p-4 text-xs text-ink-secondary">
+                {isUk
+                  ? 'У цьому режимі ви можете перемикати окремі формулювання розділів між "Захистом виконавця" та "Збалансованим", або читати юридичні пояснення до кожного пункту.'
+                  : 'In this mode you can swap clause variants between Contractor-Protective and Balanced, or inspect rationale explanations for each module.'}
+              </div>
+
+              {assembled.sections.map((section, idx) => (
+                <article
+                  key={section.module}
+                  className="overflow-hidden rounded-xl border border-paper-border bg-white shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-paper-border bg-paper-soft px-4 py-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-sm border border-paper-border bg-white px-2 py-0.5 font-mono text-xs font-semibold text-ink-primary">
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <span className="text-xs font-semibold text-ink-primary">{section.title}</span>
+                      <span className="rounded-sm border border-brand/50 bg-brand-subtle px-2 py-0.5 font-mono text-[10px] font-semibold text-brand-text">
+                        {section.selectedClauseId}
+                      </span>
+                    </div>
+
+                    {/* Variant Switcher */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-ink-muted">
+                        {t.builder.swapVariantLabel}
+                      </span>
+                      {section.alternatives.map((alt) => {
+                        const active = alt.clauseId === section.selectedClauseId;
+                        return (
+                          <button
+                            key={alt.clauseId}
+                            type="button"
+                            onClick={() => handleSwapClauseVariant(section.module, alt.clauseId)}
+                            className={`rounded-md border px-2.5 py-0.5 font-mono text-[10px] font-semibold transition-colors ${
+                              active
+                                ? 'border-forest bg-forest text-white'
+                                : 'border-paper-border bg-white text-ink-secondary hover:border-paper-strong'
+                            }`}
+                          >
+                            {alt.posture === 'CONTRACTOR_PROTECTIVE'
+                              ? t.library.postureProtective
+                              : t.library.postureBalanced}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 divide-y divide-paper-border lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+                    <div className="p-4 lg:col-span-8">
+                      <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-primary">
+                        {section.renderedText}
+                      </p>
+                    </div>
+                    <div className="flex flex-col justify-between bg-paper-soft/50 p-4 lg:col-span-4">
+                      <div>
+                        <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-brand-text">
+                          {t.builder.rationalePrefix}
+                        </span>
+                        <p className="mt-1.5 text-xs leading-relaxed text-ink-secondary">
+                          {section.rationale}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void copyWithFeedback(section.module, section.renderedText)}
+                        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-paper-border bg-white px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:border-paper-strong"
+                      >
+                        {copiedKey === section.module ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-risk-lowText" aria-hidden="true" />
+                            <span>{t.specimen.copiedBtn}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>{t.builder.copySectionBtn}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {/* Collapsible Full Assembled Plain Text */}
           <div className="overflow-hidden rounded-xl border border-paper-border bg-white">
             <button
               type="button"

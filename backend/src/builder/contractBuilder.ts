@@ -517,17 +517,25 @@ export async function assembleContractFromPlainText(
   });
 
   const templateTitle = isUkDisplay ? templateDef.titleUk : templateDef.titleEn;
+  const today = new Date();
+  const ukMonths = [
+    'січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня',
+  ];
+  const formattedUkDate = `«${String(today.getDate()).padStart(2, '0')}» ${ukMonths[today.getMonth()]} ${today.getFullYear()} р.`;
+  const formattedEnDate = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   const headerBlock = isUkDisplay
-    ? `${templateTitle.toUpperCase()}\nЗамовник: ${parameters.clientName}\nВиконавець: ${parameters.contractorName}\nПроєкт: ${parameters.projectTitle}\nДата формування: ${new Date().toISOString().slice(0, 10)}`
-    : `${templateTitle.toUpperCase()}\nClient: ${parameters.clientName}\nContractor: ${parameters.contractorName}\nProject: ${parameters.projectTitle}\nEffective Date: ${new Date().toISOString().slice(0, 10)}`;
+    ? `ДОГОВІР № 20-CG\n${templateTitle.toUpperCase()}\n\nм. Київ                                                               ${formattedUkDate}\n\n${parameters.clientName}, що діє на підставі статуту / реєстраційних документів (надалі – «Замовник»), з однієї сторони, та\n${parameters.contractorName}, що діє на підставі статуту / виписки з ЄДР (надалі – «Виконавець»), з іншої сторони,\nразом іменовані «Сторони», а кожна окремо – «Сторона», уклали даний Договір про наступне:`
+    : `AGREEMENT NO. 20-CG\n${templateTitle.toUpperCase()}\n\nCity: Kyiv / Remote                                                 ${formattedEnDate}\n\n${parameters.clientName} (hereinafter referred to as the "Client"), of the first part, and\n${parameters.contractorName} (hereinafter referred to as the "Contractor"), of the second part,\ncollectively referred to as the "Parties" and individually as a "Party", have entered into this Agreement as follows:`;
 
   const bodyBlocks = sections.map(
-    (s, idx) => `${idx + 1}. ${s.title.toUpperCase()} [${s.selectedClauseId}]\n${s.renderedText}`,
+    (s, idx) => `РОЗДІЛ ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`,
   );
 
   const signatureBlock = isUkDisplay
-    ? `РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН\nЗамовник (${parameters.clientName}): _______________________\nВиконавець (${parameters.contractorName}): _______________________`
-    : `SIGNATURES\nClient (${parameters.clientName}): _______________________\nContractor (${parameters.contractorName}): _______________________`;
+    ? `РОЗДІЛ ${sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН\n\nЗАМОВНИК:\t\t\t\t\t\t\tВИКОНАВЕЦЬ:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nАдреса: [Вкажіть юридичну адресу]\t\t\t\tАдреса: [Вкажіть юридичну адресу]\nКод ЄДРПОУ / РНОКПП: __________________\t\tРНОКПП / ЄДРПОУ: ______________________\nIBAN: _________________________________\t\t\tIBAN: _________________________________\nБанк: _________________________________\t\t\tБанк: _________________________________\n\nПідпис: _______________________________\t\t\tПідпис: _______________________________\n        / ${parameters.clientName} /\t\t\t\t        / ${parameters.contractorName} /\nМ.П.\t\t\t\t\t\t\t\t\t\tМ.П.`
+    : `SECTION ${sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES\n\nCLIENT:\t\t\t\t\t\t\t\tCONTRACTOR:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nAddress: [Client Legal Address]\t\t\t\tAddress: [Contractor Legal Address]\nTax ID: [Company / Tax Code]\t\t\t\tTax ID: [Tax / Registration Code]\nIBAN / Account: _______________________\t\tIBAN / Account: _______________________\n\nSignature: ____________________________\t\tSignature: ____________________________\n           / ${parameters.clientName} /\t\t\t\t           / ${parameters.contractorName} /`;
 
   const fullContractText = [headerBlock, ...bodyBlocks, signatureBlock].join('\n\n');
 
