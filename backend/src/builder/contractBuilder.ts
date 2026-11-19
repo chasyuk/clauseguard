@@ -98,6 +98,14 @@ const ExtractedDealPlanSchema = z.object({
   deadlineDate: optStr,
   liabilityCapMonths: optNum(1, 24),
   governingLaw: optStr,
+  clientAddress: optStr,
+  contractorAddress: optStr,
+  clientTaxId: optStr,
+  contractorTaxId: optStr,
+  clientIban: optStr,
+  contractorIban: optStr,
+  clientBank: optStr,
+  contractorBank: optStr,
 });
 
 const BUILDER_EXTRACTION_PROMPT = `You are ClauseGuard Contract Architect. Extract structured deal parameters from a freelancer or digital agency's plain-text description.
@@ -474,6 +482,30 @@ export async function assembleContractFromPlainText(
       aiFields.governingLaw ??
       templateDef.defaultParameters.governingLaw ??
       baseDefaults.governingLaw,
+    clientAddress:
+      input.parameterOverrides?.clientAddress ?? aiFields.clientAddress ?? baseDefaults.clientAddress,
+    contractorAddress:
+      input.parameterOverrides?.contractorAddress ??
+      aiFields.contractorAddress ??
+      baseDefaults.contractorAddress,
+    clientTaxId:
+      input.parameterOverrides?.clientTaxId ?? aiFields.clientTaxId ?? baseDefaults.clientTaxId,
+    contractorTaxId:
+      input.parameterOverrides?.contractorTaxId ??
+      aiFields.contractorTaxId ??
+      baseDefaults.contractorTaxId,
+    clientIban:
+      input.parameterOverrides?.clientIban ?? aiFields.clientIban ?? baseDefaults.clientIban,
+    contractorIban:
+      input.parameterOverrides?.contractorIban ??
+      aiFields.contractorIban ??
+      baseDefaults.contractorIban,
+    clientBank:
+      input.parameterOverrides?.clientBank ?? aiFields.clientBank ?? baseDefaults.clientBank,
+    contractorBank:
+      input.parameterOverrides?.contractorBank ??
+      aiFields.contractorBank ??
+      baseDefaults.contractorBank,
   };
 
   const omittedWarnings = buildOmittedTermWarnings(plainText, parameters);
@@ -533,9 +565,18 @@ export async function assembleContractFromPlainText(
     (s, idx) => `РОЗДІЛ ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`,
   );
 
+  const clientAddr = parameters.clientAddress || '[Вкажіть юридичну адресу]';
+  const contractorAddr = parameters.contractorAddress || '[Вкажіть юридичну адресу]';
+  const clientCode = parameters.clientTaxId || '__________________';
+  const contractorCode = parameters.contractorTaxId || '______________________';
+  const clientIban = parameters.clientIban || '_________________________________';
+  const contractorIban = parameters.contractorIban || '_________________________________';
+  const clientBank = parameters.clientBank || '_________________________________';
+  const contractorBank = parameters.contractorBank || '_________________________________';
+
   const signatureBlock = isUkDisplay
-    ? `РОЗДІЛ ${sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН\n\nЗАМОВНИК:\t\t\t\t\t\t\tВИКОНАВЕЦЬ:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nАдреса: [Вкажіть юридичну адресу]\t\t\t\tАдреса: [Вкажіть юридичну адресу]\nКод ЄДРПОУ / РНОКПП: __________________\t\tРНОКПП / ЄДРПОУ: ______________________\nIBAN: _________________________________\t\t\tIBAN: _________________________________\nБанк: _________________________________\t\t\tБанк: _________________________________\n\nПідпис: _______________________________\t\t\tПідпис: _______________________________\n        / ${parameters.clientName} /\t\t\t\t        / ${parameters.contractorName} /\nМ.П.\t\t\t\t\t\t\t\t\t\tМ.П.`
-    : `SECTION ${sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES\n\nCLIENT:\t\t\t\t\t\t\t\tCONTRACTOR:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nAddress: [Client Legal Address]\t\t\t\tAddress: [Contractor Legal Address]\nTax ID: [Company / Tax Code]\t\t\t\tTax ID: [Tax / Registration Code]\nIBAN / Account: _______________________\t\tIBAN / Account: _______________________\n\nSignature: ____________________________\t\tSignature: ____________________________\n           / ${parameters.clientName} /\t\t\t\t           / ${parameters.contractorName} /`;
+    ? `РОЗДІЛ ${sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН\n\nЗАМОВНИК:\t\t\t\t\t\t\tВИКОНАВЕЦЬ:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nАдреса: ${clientAddr}\t\t\t\tАдреса: ${contractorAddr}\nКод ЄДРПОУ / РНОКПП: ${clientCode}\t\tРНОКПП / ЄДРПОУ: ${contractorCode}\nIBAN: ${clientIban}\t\t\tIBAN: ${contractorIban}\nБанк: ${clientBank}\t\t\tБанк: ${contractorBank}\n\nПідпис: _______________________________\t\t\tПідпис: _______________________________\n        / ${parameters.clientName} /\t\t\t\t        / ${parameters.contractorName} /\nМ.П.\t\t\t\t\t\t\t\t\t\tМ.П.`
+    : `SECTION ${sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES\n\nCLIENT:\t\t\t\t\t\t\t\tCONTRACTOR:\n${parameters.clientName}\t\t\t\t\t\t\t${parameters.contractorName}\nAddress: ${parameters.clientAddress || '[Client Legal Address]'}\t\t\t\tAddress: ${parameters.contractorAddress || '[Contractor Legal Address]'}\nTax ID: ${parameters.clientTaxId || '[Company / Tax Code]'}\t\t\t\tTax ID: ${parameters.contractorTaxId || '[Tax / Registration Code]'}\nIBAN / Account: ${parameters.clientIban || '_______________________'}\t\tIBAN / Account: ${parameters.contractorIban || '_______________________'}\nBank: ${parameters.clientBank || '_______________________'}\t\t\tBank: ${parameters.contractorBank || '_______________________'}\n\nSignature: ____________________________\t\tSignature: ____________________________\n           / ${parameters.clientName} /\t\t\t\t           / ${parameters.contractorName} /`;
 
   const fullContractText = [headerBlock, ...bodyBlocks, signatureBlock].join('\n\n');
 

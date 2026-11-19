@@ -28,6 +28,14 @@ export interface ContractParameters {
   deadlineDate: string;
   liabilityCapMonths: number;
   governingLaw: string;
+  clientAddress?: string;
+  contractorAddress?: string;
+  clientTaxId?: string;
+  contractorTaxId?: string;
+  clientIban?: string;
+  contractorIban?: string;
+  clientBank?: string;
+  contractorBank?: string;
 }
 
 export interface VettedClauseVariant {

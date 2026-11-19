@@ -173,28 +173,30 @@ export async function generateAssembledContractDocx(
     }),
   );
 
+  const p = assembled.parameters;
   const sigRows = isUk
     ? [
         { left: 'ЗАМОВНИК:', right: 'ВИКОНАВЕЦЬ:', bold: true },
-        { left: assembled.parameters.clientName, right: assembled.parameters.contractorName, bold: true },
-        { left: 'Адреса: [Юридична адреса]', right: 'Адреса: [Юридична адреса]', bold: false },
-        { left: 'Код ЄДРПОУ: ___________________', right: 'РНОКПП / ЄДРПОУ: ________________', bold: false },
-        { left: 'IBAN: ___________________________', right: 'IBAN: ___________________________', bold: false },
-        { left: 'Банк: ___________________________', right: 'Банк: ___________________________', bold: false },
+        { left: p.clientName, right: p.contractorName, bold: true },
+        { left: `Адреса: ${p.clientAddress || '[Юридична адреса]'}`, right: `Адреса: ${p.contractorAddress || '[Юридична адреса]'}`, bold: false },
+        { left: `Код ЄДРПОУ: ${p.clientTaxId || '___________________'}`, right: `РНОКПП / ЄДРПОУ: ${p.contractorTaxId || '________________'}`, bold: false },
+        { left: `IBAN: ${p.clientIban || '___________________________'}`, right: `IBAN: ${p.contractorIban || '___________________________'}`, bold: false },
+        { left: `Банк: ${p.clientBank || '___________________________'}`, right: `Банк: ${p.contractorBank || '___________________________'}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Підпис: _________________________', right: 'Підпис: _________________________', bold: false },
-        { left: `        / ${assembled.parameters.clientName} /`, right: `        / ${assembled.parameters.contractorName} /`, bold: false },
+        { left: `        / ${p.clientName} /`, right: `        / ${p.contractorName} /`, bold: false },
         { left: 'М.П.', right: 'М.П.', bold: true },
       ]
     : [
         { left: 'CLIENT:', right: 'CONTRACTOR:', bold: true },
-        { left: assembled.parameters.clientName, right: assembled.parameters.contractorName, bold: true },
-        { left: 'Address: [Legal Address]', right: 'Address: [Legal Address]', bold: false },
-        { left: 'Tax ID: __________________________', right: 'Tax ID: __________________________', bold: false },
-        { left: 'Account: _________________________', right: 'Account: _________________________', bold: false },
+        { left: p.clientName, right: p.contractorName, bold: true },
+        { left: `Address: ${p.clientAddress || '[Legal Address]'}`, right: `Address: ${p.contractorAddress || '[Legal Address]'}`, bold: false },
+        { left: `Tax ID: ${p.clientTaxId || '__________________________'}`, right: `Tax ID: ${p.contractorTaxId || '__________________________'}`, bold: false },
+        { left: `Account: ${p.clientIban || '_________________________'}`, right: `Account: ${p.contractorIban || '_________________________'}`, bold: false },
+        { left: `Bank: ${p.clientBank || '____________________________'}`, right: `Bank: ${p.contractorBank || '____________________________'}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Signature: _______________________', right: 'Signature: _______________________', bold: false },
-        { left: `           / ${assembled.parameters.clientName} /`, right: `           / ${assembled.parameters.contractorName} /`, bold: false },
+        { left: `           / ${p.clientName} /`, right: `           / ${p.contractorName} /`, bold: false },
       ];
 
   for (const row of sigRows) {
@@ -373,52 +375,55 @@ export async function generateAssembledContractPdf(
   const col1X = marginX;
   const col2X = marginX + colWidth + 20;
 
+  const p = assembled.parameters;
   const leftLines = isUk
     ? [
         'ЗАМОВНИК:',
-        assembled.parameters.clientName,
-        'Адреса: [Вкажіть юридичну адресу]',
-        'Код ЄДРПОУ / РНОКПП: ____________',
-        'IBAN: ___________________________',
-        'Банк: ___________________________',
+        p.clientName,
+        `Адреса: ${p.clientAddress || '[Вкажіть юридичну адресу]'}`,
+        `Код ЄДРПОУ / РНОКПП: ${p.clientTaxId || '____________'}`,
+        `IBAN: ${p.clientIban || '___________________________'}`,
+        `Банк: ${p.clientBank || '___________________________'}`,
         '',
         'Підпис: _________________________',
-        `        / ${assembled.parameters.clientName} /`,
+        `        / ${p.clientName} /`,
         'М.П.',
       ]
     : [
         'CLIENT:',
-        assembled.parameters.clientName,
-        'Address: [Legal Address]',
-        'Tax ID: __________________________',
-        'Account: _________________________',
+        p.clientName,
+        `Address: ${p.clientAddress || '[Legal Address]'}`,
+        `Tax ID: ${p.clientTaxId || '__________________________'}`,
+        `Account: ${p.clientIban || '_________________________'}`,
+        `Bank: ${p.clientBank || '____________________________'}`,
         '',
         'Signature: _______________________',
-        `           / ${assembled.parameters.clientName} /`,
+        `           / ${p.clientName} /`,
       ];
 
   const rightLines = isUk
     ? [
         'ВИКОНАВЕЦЬ:',
-        assembled.parameters.contractorName,
-        'Адреса: [Вкажіть юридичну адресу]',
-        'РНОКПП / ЄДРПОУ: ________________',
-        'IBAN: ___________________________',
-        'Банк: ___________________________',
+        p.contractorName,
+        `Адреса: ${p.contractorAddress || '[Вкажіть юридичну адресу]'}`,
+        `РНОКПП / ЄДРПОУ: ${p.contractorTaxId || '________________'}`,
+        `IBAN: ${p.contractorIban || '___________________________'}`,
+        `Банк: ${p.contractorBank || '___________________________'}`,
         '',
         'Підпис: _________________________',
-        `        / ${assembled.parameters.contractorName} /`,
+        `        / ${p.contractorName} /`,
         'М.П.',
       ]
     : [
         'CONTRACTOR:',
-        assembled.parameters.contractorName,
-        'Address: [Legal Address]',
-        'Tax ID: __________________________',
-        'Account: _________________________',
+        p.contractorName,
+        `Address: ${p.contractorAddress || '[Legal Address]'}`,
+        `Tax ID: ${p.contractorTaxId || '__________________________'}`,
+        `Account: ${p.contractorIban || '_________________________'}`,
+        `Bank: ${p.contractorBank || '____________________________'}`,
         '',
         'Signature: _______________________',
-        `           / ${assembled.parameters.contractorName} /`,
+        `           / ${p.contractorName} /`,
       ];
 
   const startSigY = cursorY;
