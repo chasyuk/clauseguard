@@ -226,6 +226,8 @@ export interface AssembledContractResult {
   omittedWarnings: OmittedTermWarning[];
   sections: AssembledClauseSection[];
   fullContractText: string;
+  contractNumber?: string;
+  contractCity?: string;
 }
 
 export interface PublicUser {

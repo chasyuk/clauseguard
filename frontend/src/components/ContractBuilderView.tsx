@@ -108,6 +108,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
   >({});
   const [paramDraft, setParamDraft] = useState<Partial<ContractParameters>>(DEFAULT_PARAMS);
   const [assembled, setAssembled] = useState<AssembledContractResult | null>(null);
+  const isContractUk = (assembled?.contractLanguage ?? contractLanguage) === 'uk';
 
   const [isLoading, setIsLoading] = useState(false);
   const [exportingType, setExportingType] = useState<'docx' | 'pdf' | null>(null);
@@ -250,7 +251,12 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
         selectedClauseIds: opts?.overrideClauseIds ?? selectedClauseIds,
         parameterOverrides: paramsToUse,
       });
-      setAssembled(result);
+      const enrichedResult: AssembledContractResult = {
+        ...result,
+        contractNumber: contractNumber || result.contractNumber || '20',
+        contractCity: contractCity || result.contractCity || (result.contractLanguage === 'uk' ? 'Вінниця' : 'Kyiv'),
+      };
+      setAssembled(enrichedResult);
       setParamDraft(result.parameters);
       setWizardStep(3);
     } catch (err) {
@@ -284,6 +290,16 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
     });
   };
 
+  const handleContractNumberChange = (num: string) => {
+    setContractNumber(num);
+    setAssembled((prev) => (prev ? { ...prev, contractNumber: num } : null));
+  };
+
+  const handleContractCityChange = (city: string) => {
+    setContractCity(city);
+    setAssembled((prev) => (prev ? { ...prev, contractCity: city } : null));
+  };
+
   const handleDownload = async (format: 'docx' | 'pdf') => {
     if (!isPro) {
       onOpenPricing?.('builder');
@@ -293,10 +309,15 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
     setExportingType(format);
     setError(null);
     try {
+      const payload: AssembledContractResult = {
+        ...assembled,
+        contractNumber: (contractNumber || assembled.contractNumber || '20').trim(),
+        contractCity: (contractCity || assembled.contractCity || (assembled.contractLanguage === 'uk' ? 'Вінниця' : 'Kyiv')).trim(),
+      };
       if (format === 'docx') {
-        await exportAssembledContractDocx(assembled);
+        await exportAssembledContractDocx(payload);
       } else {
-        await exportAssembledContractPdf(assembled);
+        await exportAssembledContractPdf(payload);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed.');
@@ -969,6 +990,42 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2">
+              {/* Language Switcher */}
+              <div className="inline-flex overflow-hidden rounded-xl border border-paper-border bg-paper p-0.5" title={isUk ? "Мова договору" : "Contract language"}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (assembled.contractLanguage !== 'uk') {
+                      setContractLanguage('uk');
+                      void handleAssembleFromParams({ overrideLang: 'uk' });
+                    }
+                  }}
+                  className={`rounded-lg px-2.5 py-1 font-mono text-xs font-bold transition-colors ${
+                    assembled.contractLanguage === 'uk'
+                      ? 'bg-forest text-white shadow-xs'
+                      : 'text-ink-secondary hover:text-ink-primary'
+                  }`}
+                >
+                  UA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (assembled.contractLanguage !== 'en') {
+                      setContractLanguage('en');
+                      void handleAssembleFromParams({ overrideLang: 'en' });
+                    }
+                  }}
+                  className={`rounded-lg px-2.5 py-1 font-mono text-xs font-bold transition-colors ${
+                    assembled.contractLanguage === 'en'
+                      ? 'bg-forest text-white shadow-xs'
+                      : 'text-ink-secondary hover:text-ink-primary'
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setWizardStep(2)}
@@ -1042,17 +1099,17 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
               <div className="text-center space-y-1.5 pb-2">
                 <div className="flex items-center justify-center gap-2">
                   <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wider text-stone-950 font-serif">
-                    {isUk ? 'ДОГОВІР №' : 'AGREEMENT NO.'}
+                    {isContractUk ? 'ДОГОВІР №' : 'AGREEMENT NO.'}
                   </h2>
                   <input
                     type="text"
                     value={contractNumber}
-                    onChange={(e) => setContractNumber(e.target.value)}
-                    className="w-20 sm:w-24 border-b border-dotted border-stone-400 bg-transparent text-center text-xl sm:text-2xl font-bold uppercase tracking-wider text-stone-950 focus:border-forest focus:outline-none"
-                    title={isUk ? 'Редагувати номер договору' : 'Edit agreement number'}
+                    onChange={(e) => handleContractNumberChange(e.target.value)}
+                    className="w-20 sm:w-28 border-b border-dotted border-stone-400 bg-transparent text-center text-xl sm:text-2xl font-bold uppercase tracking-wider text-stone-950 focus:border-forest focus:outline-none"
+                    title={isContractUk ? 'Редагувати номер договору' : 'Edit agreement number'}
                   />
                 </div>
-                <p className="text-sm sm:text-base font-semibold text-stone-800 tracking-normal font-serif">
+                <p className="text-sm sm:text-base font-semibold text-stone-800 tracking-normal font-serif uppercase">
                   {assembled.templateTitle}
                 </p>
               </div>
@@ -1060,18 +1117,18 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
               {/* Location & Date Row */}
               <div className="flex flex-row justify-between items-center text-xs sm:text-sm font-semibold text-stone-800 border-b border-stone-200 pb-3 mb-6 mt-4">
                 <div className="flex items-center gap-1.5">
-                  <span>{isUk ? 'м.' : 'City:'}</span>
+                  <span>{isContractUk ? 'м.' : 'City:'}</span>
                   <input
                     type="text"
                     value={contractCity}
-                    onChange={(e) => setContractCity(e.target.value)}
+                    onChange={(e) => handleContractCityChange(e.target.value)}
                     className="w-28 sm:w-36 border-b border-dotted border-stone-400 bg-transparent px-1 py-0.5 text-xs sm:text-sm font-semibold text-stone-900 focus:border-forest focus:outline-none"
-                    title={isUk ? 'Натисніть, щоб змінити місто' : 'Click to edit city'}
+                    title={isContractUk ? 'Натисніть, щоб змінити місто' : 'Click to edit city'}
                   />
                 </div>
                 <div className="text-right">
                   <span>
-                    {isUk
+                    {isContractUk
                       ? formatUkrainianLegalDate()
                       : new Date().toLocaleDateString('en-US', {
                           month: 'long',
@@ -1084,7 +1141,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
 
               {/* Formal Preamble */}
               <div className="text-justify indent-8 text-[13.5px] sm:text-[14px] leading-relaxed text-stone-900 space-y-2 mb-6">
-                {isUk ? (
+                {isContractUk ? (
                   <>
                     <p>
                       <strong className="font-semibold text-stone-950">
@@ -1135,7 +1192,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                     <section key={section.module} className="group relative">
                       <div className="mb-2.5 text-center">
                         <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-950 font-serif">
-                          {isUk
+                          {isContractUk
                             ? `РОЗДІЛ ${idx + 1}. ${section.title}`
                             : `SECTION ${idx + 1}. ${section.title}`}
                         </h3>
@@ -1156,7 +1213,7 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
               {/* Formal Signatures and Requisites Block */}
               <div className="mt-12 pt-8 border-t border-stone-300">
                 <h3 className="text-center text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-950 mb-8 font-serif">
-                  {isUk
+                  {isContractUk
                     ? `РОЗДІЛ ${assembled.sections.length + 1}. МІСЦЕЗНАХОДЖЕННЯ, РЕКВІЗИТИ ТА ПІДПИСИ СТОРІН`
                     : `SECTION ${assembled.sections.length + 1}. ADDRESSES, DETAILS & SIGNATURES`}
                 </h3>
@@ -1165,20 +1222,20 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                   {/* Column 1: Client */}
                   <div className="space-y-3.5 rounded border border-dashed border-stone-300 p-4 sm:p-5 bg-stone-50/60 shadow-xs">
                     <div className="font-bold uppercase tracking-wide text-stone-950 border-b border-stone-200 pb-1.5 flex items-center justify-between">
-                      <span>{isUk ? 'ЗАМОВНИК (КЛІЄНТ):' : 'CLIENT:'}</span>
+                      <span>{isContractUk ? 'ЗАМОВНИК (КЛІЄНТ):' : 'CLIENT:'}</span>
                     </div>
                     <div className="font-semibold text-stone-950 text-sm">{assembled.parameters.clientName}</div>
                     
                     <div className="space-y-2 text-stone-700 text-xs sm:text-[12.5px]">
                       <div>
                         <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                          {isUk ? 'Юридична адреса:' : 'Legal Address:'}
+                          {isContractUk ? 'Юридична адреса:' : 'Legal Address:'}
                         </span>
                         <input
                           type="text"
                           value={assembled.parameters.clientAddress ?? ''}
                           onChange={(e) => updateRequisite('clientAddress', e.target.value)}
-                          placeholder={isUk ? 'Введіть юридичну адресу (напр., м. Київ, вул. Хрещатик, 1)' : 'Enter legal address...'}
+                          placeholder={isContractUk ? 'Введіть юридичну адресу (напр., м. Київ, вул. Хрещатик, 1)' : 'Enter legal address...'}
                           className="w-full rounded border border-stone-300 bg-white px-2.5 py-1.5 text-xs sm:text-[13px] text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                         />
                       </div>
@@ -1186,26 +1243,26 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                            {isUk ? 'Код ЄДРПОУ:' : 'Tax ID:'}
+                            {isContractUk ? 'Код ЄДРПОУ:' : 'Tax ID:'}
                           </span>
                           <input
                             type="text"
                             value={assembled.parameters.clientTaxId ?? ''}
                             onChange={(e) => updateRequisite('clientTaxId', e.target.value)}
-                            placeholder={isUk ? '12345678' : 'Tax code...'}
+                            placeholder={isContractUk ? '12345678' : 'Tax code...'}
                             className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                           />
                         </div>
 
                         <div>
                           <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                            {isUk ? 'Банк:' : 'Bank:'}
+                            {isContractUk ? 'Банк:' : 'Bank:'}
                           </span>
                           <input
                             type="text"
                             value={assembled.parameters.clientBank ?? ''}
                             onChange={(e) => updateRequisite('clientBank', e.target.value)}
-                            placeholder={isUk ? 'АТ КБ "ПриватБанк"' : 'Bank name...'}
+                            placeholder={isContractUk ? 'АТ КБ "ПриватБанк"' : 'Bank name...'}
                             className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                           />
                         </div>
@@ -1227,13 +1284,13 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
 
                     <div className="pt-4">
                       <div className="flex items-end justify-between gap-2 border-b border-stone-400 pb-1">
-                        <span className="text-xs text-stone-500">{isUk ? 'Підпис:' : 'Signature:'}</span>
+                        <span className="text-xs text-stone-500">{isContractUk ? 'Підпис:' : 'Signature:'}</span>
                         <span className="font-semibold text-stone-950 text-xs sm:text-sm">
                           / {assembled.parameters.clientName} /
                         </span>
                       </div>
                       <div className="mt-1 text-[11px] text-stone-400 text-right">
-                        {isUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
+                        {isContractUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
                       </div>
                     </div>
                   </div>
@@ -1241,20 +1298,20 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                   {/* Column 2: Contractor */}
                   <div className="space-y-3.5 rounded border border-dashed border-stone-300 p-4 sm:p-5 bg-stone-50/60 shadow-xs">
                     <div className="font-bold uppercase tracking-wide text-stone-950 border-b border-stone-200 pb-1.5 flex items-center justify-between">
-                      <span>{isUk ? 'ВИКОНАВЕЦЬ:' : 'CONTRACTOR:'}</span>
+                      <span>{isContractUk ? 'ВИКОНАВЕЦЬ:' : 'CONTRACTOR:'}</span>
                     </div>
                     <div className="font-semibold text-stone-950 text-sm">{assembled.parameters.contractorName}</div>
                     
                     <div className="space-y-2 text-stone-700 text-xs sm:text-[12.5px]">
                       <div>
                         <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                          {isUk ? 'Юридична адреса:' : 'Legal Address:'}
+                          {isContractUk ? 'Юридична адреса:' : 'Legal Address:'}
                         </span>
                         <input
                           type="text"
                           value={assembled.parameters.contractorAddress ?? ''}
                           onChange={(e) => updateRequisite('contractorAddress', e.target.value)}
-                          placeholder={isUk ? 'Введіть юридичну адресу (напр., м. Вінниця, вул. Стрілецька, 105)' : 'Enter legal address...'}
+                          placeholder={isContractUk ? 'Введіть юридичну адресу (напр., м. Вінниця, вул. Стрілецька, 105)' : 'Enter legal address...'}
                           className="w-full rounded border border-stone-300 bg-white px-2.5 py-1.5 text-xs sm:text-[13px] text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                         />
                       </div>
@@ -1262,26 +1319,26 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                            {isUk ? 'РНОКПП / ЄДРПОУ:' : 'Tax ID:'}
+                            {isContractUk ? 'РНОКПП / ЄДРПОУ:' : 'Tax ID:'}
                           </span>
                           <input
                             type="text"
                             value={assembled.parameters.contractorTaxId ?? ''}
                             onChange={(e) => updateRequisite('contractorTaxId', e.target.value)}
-                            placeholder={isUk ? '3934708560' : 'Tax code...'}
+                            placeholder={isContractUk ? '3934708560' : 'Tax code...'}
                             className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                           />
                         </div>
 
                         <div>
                           <span className="text-stone-500 font-medium text-[11px] uppercase tracking-wider block mb-0.5">
-                            {isUk ? 'Банк:' : 'Bank:'}
+                            {isContractUk ? 'Банк:' : 'Bank:'}
                           </span>
                           <input
                             type="text"
                             value={assembled.parameters.contractorBank ?? ''}
                             onChange={(e) => updateRequisite('contractorBank', e.target.value)}
-                            placeholder={isUk ? 'АТ "Універсал Банк" (monobank)' : 'Bank name...'}
+                            placeholder={isContractUk ? 'АТ "Універсал Банк" (monobank)' : 'Bank name...'}
                             className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs text-stone-900 shadow-xs transition-colors placeholder:text-stone-400 focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest"
                           />
                         </div>
@@ -1303,13 +1360,13 @@ export const ContractBuilderView: React.FC<ContractBuilderViewProps> = ({
 
                     <div className="pt-4">
                       <div className="flex items-end justify-between gap-2 border-b border-stone-400 pb-1">
-                        <span className="text-xs text-stone-500">{isUk ? 'Підпис:' : 'Signature:'}</span>
+                        <span className="text-xs text-stone-500">{isContractUk ? 'Підпис:' : 'Signature:'}</span>
                         <span className="font-semibold text-stone-950 text-xs sm:text-sm">
                           / {assembled.parameters.contractorName} /
                         </span>
                       </div>
                       <div className="mt-1 text-[11px] text-stone-400 text-right">
-                        {isUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
+                        {isContractUk ? 'М.П. (за наявності)' : 'Stamp / Seal'}
                       </div>
                     </div>
                   </div>

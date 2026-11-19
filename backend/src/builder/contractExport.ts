@@ -21,17 +21,47 @@ function getEnglishDate(d: Date = new Date()): string {
  * Exports an assembled vetted contract to a clean, formal Microsoft Word (.docx) document
  * styled as an authentic Ukrainian legal agreement.
  */
+function formatLegalDocNumber(rawNum: string | undefined, isUk: boolean): string {
+  const num = rawNum?.trim();
+  const baseNum = num || '20';
+  return isUk ? `ДОГОВІР № ${baseNum}` : `AGREEMENT NO. ${baseNum}`;
+}
+
+function formatLegalCity(rawCity: string | undefined, isUk: boolean): string {
+  const city = rawCity?.trim();
+  if (!city) {
+    return isUk ? 'м. Вінниця' : 'City: Kyiv';
+  }
+  if (isUk) {
+    if (/^м\.?\s+/i.test(city)) return city;
+    return `м. ${city}`;
+  } else {
+    if (/^city:?\s+/i.test(city)) return city;
+    return `City: ${city}`;
+  }
+}
+
+function cleanRequisiteField(val: string | undefined, defaultUnderline: string): string {
+  if (!val) return defaultUnderline;
+  const trimmed = val.trim();
+  if (!trimmed || trimmed.startsWith('[') || trimmed.includes('Вкажіть') || trimmed.includes('Legal Address')) {
+    return defaultUnderline;
+  }
+  return trimmed;
+}
+
 export async function generateAssembledContractDocx(
   assembled: AssembledContractResult,
 ): Promise<Buffer> {
   const isUk = assembled.contractLanguage === 'uk';
   const today = new Date();
   const dateStr = isUk ? getUkrainianDate(today) : getEnglishDate(today);
-  const cityStr = isUk ? 'м. Вінниця' : 'City of Kyiv / Remote';
+  const cityStr = formatLegalCity(assembled.contractCity, isUk);
+  const titleText = formatLegalDocNumber(assembled.contractNumber, isUk);
 
   const children: Paragraph[] = [];
 
-  // 1. Centered Title: ДОГОВІР № 20-CG
+  // 1. Centered Title
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
@@ -39,7 +69,7 @@ export async function generateAssembledContractDocx(
       spacing: { before: 120, after: 60 },
       children: [
         new TextRun({
-          text: isUk ? 'ДОГОВІР № 20-CG' : 'AGREEMENT NO. 20-CG',
+          text: titleText,
           bold: true,
           size: 28, // 14pt
           font: 'Times New Roman',
@@ -120,13 +150,16 @@ export async function generateAssembledContractDocx(
 
   // 5. Numbered Legal Sections
   for (const [idx, section] of assembled.sections.entries()) {
+    const headingText = isUk
+      ? `РОЗДІЛ ${idx + 1}. ${section.title.toUpperCase()}`
+      : `SECTION ${idx + 1}. ${section.title.toUpperCase()}`;
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { before: 260, after: 120 },
         children: [
           new TextRun({
-            text: `РОЗДІЛ ${idx + 1}. ${section.title.toUpperCase()}`,
+            text: headingText,
             bold: true,
             size: 22,
             font: 'Times New Roman',
@@ -174,19 +207,27 @@ export async function generateAssembledContractDocx(
   );
 
   const p = assembled.parameters;
-  const clientAddrUk = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
-  const contractorAddrUk = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
-  const clientAddrEn = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
-  const contractorAddrEn = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
+  const clientAddrUk = cleanRequisiteField(p.clientAddress, '___________________________');
+  const contractorAddrUk = cleanRequisiteField(p.contractorAddress, '___________________________');
+  const clientAddrEn = cleanRequisiteField(p.clientAddress, '___________________________');
+  const contractorAddrEn = cleanRequisiteField(p.contractorAddress, '___________________________');
+  const clientTaxUk = cleanRequisiteField(p.clientTaxId, '___________________');
+  const contractorTaxUk = cleanRequisiteField(p.contractorTaxId, '________________');
+  const clientTaxEn = cleanRequisiteField(p.clientTaxId, '__________________________');
+  const contractorTaxEn = cleanRequisiteField(p.contractorTaxId, '__________________________');
+  const clientIbanVal = cleanRequisiteField(p.clientIban, '___________________________');
+  const contractorIbanVal = cleanRequisiteField(p.contractorIban, '___________________________');
+  const clientBankVal = cleanRequisiteField(p.clientBank, '___________________________');
+  const contractorBankVal = cleanRequisiteField(p.contractorBank, '___________________________');
 
   const sigRows = isUk
     ? [
         { left: 'ЗАМОВНИК:', right: 'ВИКОНАВЕЦЬ:', bold: true },
         { left: p.clientName, right: p.contractorName, bold: true },
         { left: `Адреса: ${clientAddrUk}`, right: `Адреса: ${contractorAddrUk}`, bold: false },
-        { left: `Код ЄДРПОУ: ${p.clientTaxId?.trim() ? p.clientTaxId.trim() : '___________________'}`, right: `РНОКПП / ЄДРПОУ: ${p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '________________'}`, bold: false },
-        { left: `IBAN: ${p.clientIban?.trim() ? p.clientIban.trim() : '___________________________'}`, right: `IBAN: ${p.contractorIban?.trim() ? p.contractorIban.trim() : '___________________________'}`, bold: false },
-        { left: `Банк: ${p.clientBank?.trim() ? p.clientBank.trim() : '___________________________'}`, right: `Банк: ${p.contractorBank?.trim() ? p.contractorBank.trim() : '___________________________'}`, bold: false },
+        { left: `Код ЄДРПОУ: ${clientTaxUk}`, right: `РНОКПП / ЄДРПОУ: ${contractorTaxUk}`, bold: false },
+        { left: `IBAN: ${clientIbanVal}`, right: `IBAN: ${contractorIbanVal}`, bold: false },
+        { left: `Банк: ${clientBankVal}`, right: `Банк: ${contractorBankVal}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Підпис: _________________________', right: 'Підпис: _________________________', bold: false },
         { left: `        / ${p.clientName} /`, right: `        / ${p.contractorName} /`, bold: false },
@@ -196,9 +237,9 @@ export async function generateAssembledContractDocx(
         { left: 'CLIENT:', right: 'CONTRACTOR:', bold: true },
         { left: p.clientName, right: p.contractorName, bold: true },
         { left: `Address: ${clientAddrEn}`, right: `Address: ${contractorAddrEn}`, bold: false },
-        { left: `Tax ID: ${p.clientTaxId?.trim() ? p.clientTaxId.trim() : '__________________________'}`, right: `Tax ID: ${p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '__________________________'}`, bold: false },
-        { left: `Account: ${p.clientIban?.trim() ? p.clientIban.trim() : '_________________________'}`, right: `Account: ${p.contractorIban?.trim() ? p.contractorIban.trim() : '_________________________'}`, bold: false },
-        { left: `Bank: ${p.clientBank?.trim() ? p.clientBank.trim() : '____________________________'}`, right: `Bank: ${p.contractorBank?.trim() ? p.contractorBank.trim() : '____________________________'}`, bold: false },
+        { left: `Tax ID: ${clientTaxEn}`, right: `Tax ID: ${contractorTaxEn}`, bold: false },
+        { left: `Account: ${clientIbanVal}`, right: `Account: ${contractorIbanVal}`, bold: false },
+        { left: `Bank: ${clientBankVal}`, right: `Bank: ${contractorBankVal}`, bold: false },
         { left: '', right: '', bold: false },
         { left: 'Signature: _______________________', right: 'Signature: _______________________', bold: false },
         { left: `           / ${p.clientName} /`, right: `           / ${p.contractorName} /`, bold: false },
@@ -246,7 +287,8 @@ export async function generateAssembledContractPdf(
   const isUk = assembled.contractLanguage === 'uk';
   const today = new Date();
   const dateStr = isUk ? getUkrainianDate(today) : getEnglishDate(today);
-  const cityStr = isUk ? 'м. Вінниця' : 'City of Kyiv / Remote';
+  const cityStr = formatLegalCity(assembled.contractCity, isUk);
+  const titleText = formatLegalDocNumber(assembled.contractNumber, isUk);
 
   let page = pdfDoc.addPage([pageWidth, pageHeight]);
   let cursorY = 792;
@@ -259,7 +301,6 @@ export async function generateAssembledContractPdf(
   };
 
   // 1. Centered Document Title
-  const titleText = isUk ? 'ДОГОВІР № 20-CG' : 'AGREEMENT NO. 20-CG';
   const titleWidth = boldFont.widthOfTextAtSize(titleText, 14);
   page.drawText(titleText, {
     x: marginX + (contentWidth - titleWidth) / 2,
@@ -321,7 +362,9 @@ export async function generateAssembledContractPdf(
 
   // 5. Sections
   for (const [idx, section] of assembled.sections.entries()) {
-    const heading = `РОЗДІЛ ${idx + 1}. ${section.title.toUpperCase()}`;
+    const heading = isUk
+      ? `РОЗДІЛ ${idx + 1}. ${section.title.toUpperCase()}`
+      : `SECTION ${idx + 1}. ${section.title.toUpperCase()}`;
     const cleanBody = section.renderedText.replace(/\[VETTED-[^\]]+\]/g, '').trim();
     const bodyLines = wrapPdfLines(cleanBody, regularFont, 8.8, contentWidth);
 
@@ -381,14 +424,14 @@ export async function generateAssembledContractPdf(
   const col2X = marginX + colWidth + 20;
 
   const p = assembled.parameters;
-  const clientAddr = p.clientAddress?.trim() ? p.clientAddress.trim() : '___________________________';
-  const contractorAddr = p.contractorAddress?.trim() ? p.contractorAddress.trim() : '___________________________';
-  const clientTax = p.clientTaxId?.trim() ? p.clientTaxId.trim() : '____________';
-  const contractorTax = p.contractorTaxId?.trim() ? p.contractorTaxId.trim() : '________________';
-  const clientIban = p.clientIban?.trim() ? p.clientIban.trim() : '___________________________';
-  const contractorIban = p.contractorIban?.trim() ? p.contractorIban.trim() : '___________________________';
-  const clientBank = p.clientBank?.trim() ? p.clientBank.trim() : '___________________________';
-  const contractorBank = p.contractorBank?.trim() ? p.contractorBank.trim() : '___________________________';
+  const clientAddr = cleanRequisiteField(p.clientAddress, '___________________________');
+  const contractorAddr = cleanRequisiteField(p.contractorAddress, '___________________________');
+  const clientTax = cleanRequisiteField(p.clientTaxId, '____________');
+  const contractorTax = cleanRequisiteField(p.contractorTaxId, '________________');
+  const clientIban = cleanRequisiteField(p.clientIban, '___________________________');
+  const contractorIban = cleanRequisiteField(p.contractorIban, '___________________________');
+  const clientBank = cleanRequisiteField(p.clientBank, '___________________________');
+  const contractorBank = cleanRequisiteField(p.contractorBank, '___________________________');
 
   const leftLines = isUk
     ? [

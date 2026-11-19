@@ -22,6 +22,8 @@ export interface AssembleContractInput {
   posture?: ClausePosture;
   selectedClauseIds?: Partial<Record<ClauseModuleType, string>>;
   parameterOverrides?: Partial<ContractParameters>;
+  contractNumber?: string;
+  contractCity?: string;
 }
 
 export interface OmittedTermWarning {
@@ -63,6 +65,8 @@ export interface AssembledContractResult {
   omittedWarnings: OmittedTermWarning[];
   sections: AssembledClauseSection[];
   fullContractText: string;
+  contractNumber?: string;
+  contractCity?: string;
 }
 
 const optStr = z.preprocess(
@@ -557,12 +561,27 @@ export async function assembleContractFromPlainText(
   const formattedUkDate = `«${String(today.getDate()).padStart(2, '0')}» ${ukMonths[today.getMonth()]} ${today.getFullYear()} р.`;
   const formattedEnDate = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const headerBlock = isUkDisplay
-    ? `ДОГОВІР № 20-CG\n${templateTitle.toUpperCase()}\n\nм. Київ                                                               ${formattedUkDate}\n\n${parameters.clientName}, що діє на підставі статуту / реєстраційних документів (надалі – «Замовник»), з однієї сторони, та\n${parameters.contractorName}, що діє на підставі статуту / виписки з ЄДР (надалі – «Виконавець»), з іншої сторони,\nразом іменовані «Сторони», а кожна окремо – «Сторона», уклали даний Договір про наступне:`
-    : `AGREEMENT NO. 20-CG\n${templateTitle.toUpperCase()}\n\nCity: Kyiv / Remote                                                 ${formattedEnDate}\n\n${parameters.clientName} (hereinafter referred to as the "Client"), of the first part, and\n${parameters.contractorName} (hereinafter referred to as the "Contractor"), of the second part,\ncollectively referred to as the "Parties" and individually as a "Party", have entered into this Agreement as follows:`;
+  const contractNumber = input.contractNumber?.trim() || '20';
+  const rawCity = input.contractCity?.trim();
+  const contractCity = rawCity
+    ? rawCity
+    : isUkDisplay
+    ? 'Вінниця'
+    : 'Kyiv';
 
-  const bodyBlocks = sections.map(
-    (s, idx) => `РОЗДІЛ ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`,
+  const docTitleLine = isUkDisplay ? `ДОГОВІР № ${contractNumber}` : `AGREEMENT NO. ${contractNumber}`;
+  const cityLine = isUkDisplay
+    ? (/^м\.?\s+/i.test(contractCity) ? contractCity : `м. ${contractCity}`)
+    : (/^city:?\s+/i.test(contractCity) ? contractCity : `City: ${contractCity}`);
+
+  const headerBlock = isUkDisplay
+    ? `${docTitleLine}\n${templateTitle.toUpperCase()}\n\n${cityLine.padEnd(50, ' ')}${formattedUkDate}\n\n${parameters.clientName}, що діє на підставі статуту / реєстраційних документів (надалі – «Замовник»), з однієї сторони, та\n${parameters.contractorName}, що діє на підставі статуту / виписки з ЄДР (надалі – «Виконавець»), з іншої сторони,\nразом іменовані «Сторони», а кожна окремо – «Сторона», уклали даний Договір про наступне:`
+    : `${docTitleLine}\n${templateTitle.toUpperCase()}\n\n${cityLine.padEnd(50, ' ')}${formattedEnDate}\n\n${parameters.clientName} (hereinafter referred to as the "Client"), of the first part, and\n${parameters.contractorName} (hereinafter referred to as the "Contractor"), of the second part,\ncollectively referred to as the "Parties" and individually as a "Party", have entered into this Agreement as follows:`;
+
+  const bodyBlocks = sections.map((s, idx) =>
+    isUkDisplay
+      ? `РОЗДІЛ ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`
+      : `SECTION ${idx + 1}. ${s.title.toUpperCase()}\n\n${s.renderedText}`,
   );
 
   const clientAddr = parameters.clientAddress?.trim() ? parameters.clientAddress.trim() : '___________________________';
@@ -591,5 +610,7 @@ export async function assembleContractFromPlainText(
     omittedWarnings,
     sections,
     fullContractText,
+    contractNumber,
+    contractCity,
   };
 }
