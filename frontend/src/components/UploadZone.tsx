@@ -24,6 +24,7 @@ interface UploadZoneProps {
   onExtracted: (record: AuditExtractionRecord) => void;
   auditsCount?: number;
   onOpenPricing?: (reason: 'audit_limit') => void;
+  isPaid?: boolean;
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -49,9 +50,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   onExtracted,
   auditsCount = 0,
   onOpenPricing,
+  isPaid = false,
 }) => {
   const freeAuditsLimit = 3;
-  const isLimitReached = auditsCount >= freeAuditsLimit;
+  const isLimitReached = !isPaid && auditsCount >= freeAuditsLimit;
   const { t, lang } = useLanguage();
   const { token } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);

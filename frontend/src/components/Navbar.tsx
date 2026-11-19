@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenAuth: (mode: 'login' | 'signup') => void;
   onOpenPricing: () => void;
   freeAuditsRemaining?: number;
+  isPaidUser?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenPricing,
   freeAuditsRemaining = 3,
+  isPaidUser = false,
 }) => {
   const { lang, setLang, t } = useLanguage();
   const { user, logout } = useAuth();
@@ -122,10 +124,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenPricing}
-            className="hidden items-center gap-1 rounded-full border border-forest-border bg-forest-deep px-3 py-1.5 text-xs font-semibold text-white/90 transition-colors hover:border-amber-400/40 hover:text-amber-200 sm:inline-flex"
+            className={`hidden items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:inline-flex ${
+              isPaidUser
+                ? 'border-emerald-400/50 bg-emerald-950/70 text-emerald-200 hover:border-emerald-300'
+                : 'border-forest-border bg-forest-deep text-white/90 hover:border-amber-400/40 hover:text-amber-200'
+            }`}
           >
-            <Sparkles className="h-3 w-3 text-signal" />
-            <span>{isUk ? 'Тарифи' : 'Pricing'}</span>
+            <Sparkles className={`h-3 w-3 ${isPaidUser ? 'text-emerald-400' : 'text-signal'}`} />
+            <span>{isPaidUser ? (isUk ? 'Тариф активний' : 'Active Plan') : (isUk ? 'Тарифи' : 'Pricing')}</span>
           </button>
           <button
             type="button"
@@ -143,9 +149,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {user.name && !user.name.includes('@') ? user.name : user.email.split('@')[0]}
                 </span>
                 <span className="font-mono text-[10px] text-forest-muted">
-                  {freeAuditsRemaining > 0
-                    ? `${freeAuditsRemaining}/3 ${isUk ? 'безкоштовно' : 'free'}`
-                    : 'Pro'}
+                  {isPaidUser
+                    ? 'Pro / Single Pass'
+                    : freeAuditsRemaining > 0
+                      ? `${freeAuditsRemaining}/3 ${isUk ? 'безкоштовно' : 'free'}`
+                      : 'Pro'}
                 </span>
               </div>
               <button

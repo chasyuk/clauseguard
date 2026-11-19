@@ -16,6 +16,8 @@ interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
   reason?: PricingReason;
+  currentPlan?: PlanTier;
+  onActivatePlan?: (plan: PlanTier) => void;
 }
 
 const MONOBANK_JAR_URL = 'https://send.monobank.ua/jar/8D84Pi88MN';
@@ -24,11 +26,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
   reason = 'general',
+  currentPlan = 'single',
+  onActivatePlan,
 }) => {
   const { lang } = useLanguage();
   const { user } = useAuth();
   const isUk = lang === 'uk';
-  const [selectedPlan, setSelectedPlan] = useState<PlanTier>('pro');
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier>(currentPlan || 'single');
+  const [justActivated, setJustActivated] = useState<PlanTier | null>(null);
 
   if (!isOpen) return null;
 
@@ -46,6 +51,18 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       '_blank',
       'noopener,noreferrer'
     );
+    localStorage.setItem('cg_user_plan', plan);
+    onActivatePlan?.(plan);
+    setJustActivated(plan);
+  };
+
+  const handleManualConfirm = (plan: PlanTier = 'single') => {
+    localStorage.setItem('cg_user_plan', plan);
+    onActivatePlan?.(plan);
+    setJustActivated(plan);
+    setTimeout(() => {
+      onClose();
+    }, 600);
   };
 
   return (
@@ -103,6 +120,20 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   : '3 free audits per account. Contract builder and unlimited scans available in Pro.'}
           </p>
         </div>
+
+        {justActivated && (
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950 shadow-xs">
+            <Check className="h-5 w-5 shrink-0 text-emerald-600" />
+            <div className="text-xs">
+              <span className="font-bold">
+                {isUk ? 'Тариф успішно активовано!' : 'Plan successfully activated!'}
+              </span>{' '}
+              {isUk
+                ? 'Конструктор договорів та додаткові перевірки розблоковано. Повертайтеся до роботи.'
+                : 'Contract builder and audits unlocked. You can return to work.'}
+            </div>
+          </div>
+        )}
 
         {/* 3 Pricing Cards with Dynamic Selection Color */}
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -536,15 +567,28 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
         {/* Footer info note */}
         <div className="mt-6 flex flex-col justify-between gap-3 border-t border-paper-border pt-4 text-xs text-ink-muted sm:flex-row sm:items-center">
-          <p>
-            {isUk
-              ? '💳 Оплата через офіційну банку Monobank. Вкажіть ваш email у призначенні платежу.'
-              : '💳 Secure payment via Monobank Jar. Please provide your email in the payment comment.'}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p>
+              {isUk
+                ? '💳 Оплата через офіційну банку Monobank.'
+                : '💳 Secure payment via Monobank Jar.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => handleManualConfirm('single')}
+              className="inline-flex items-center gap-1 font-bold text-forest underline hover:text-signal"
+            >
+              <span>
+                {isUk
+                  ? 'Вже переказали 199 ₴? Розблокувати доступ негайно →'
+                  : 'Already paid 199 ₴? Unlock access now →'}
+              </span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="self-start text-xs font-medium text-ink-secondary hover:text-ink-primary sm:self-auto"
+            className="self-start rounded-lg bg-forest px-4 py-1.5 text-xs font-semibold text-white hover:bg-forest-soft sm:self-auto"
           >
             {isUk ? 'Повернутися до роботи' : 'Back to workspace'}
           </button>

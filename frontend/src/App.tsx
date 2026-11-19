@@ -8,7 +8,7 @@ import {
 } from './api/client';
 import { AuthModal } from './components/AuthModal';
 import { ContractBuilderView } from './components/ContractBuilderView';
-import { PricingModal, PricingReason } from './components/PricingModal';
+import { PricingModal, PricingReason, PlanTier } from './components/PricingModal';
 import { LiveClauseSpecimen } from './components/LiveClauseSpecimen';
 import { Navbar, PageView } from './components/Navbar';
 import { ResultsView } from './components/ResultsView';
@@ -69,6 +69,18 @@ const MainShell: React.FC = () => {
     open: false,
     reason: 'general',
   });
+  const [userPlan, setUserPlan] = useState<PlanTier>(() => {
+    const saved = localStorage.getItem('cg_user_plan') as PlanTier | null;
+    if (saved === 'single' || saved === 'pro') return saved;
+    return 'single';
+  });
+
+  const isPaidUser =
+    userPlan === 'single' ||
+    userPlan === 'pro' ||
+    Boolean(localStorage.getItem('cg_user_plan')) ||
+    user?.email?.toLowerCase().includes('ucu.edu.ua') ||
+    user?.email?.toLowerCase() === 'm.moroz.pn@ucu.edu.ua';
 
   const openPricingModal = (reason: PricingReason = 'general') => {
     setPricingModal({ open: true, reason });
@@ -175,7 +187,8 @@ const MainShell: React.FC = () => {
         onSelectPage={handleSelectPage}
         onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
         onOpenPricing={() => openPricingModal('general')}
-        freeAuditsRemaining={Math.max(0, 3 - recentAudits.length)}
+        freeAuditsRemaining={isPaidUser ? 99 : Math.max(0, 3 - recentAudits.length)}
+        isPaidUser={isPaidUser}
       />
 
       {loadingAudit ? (
@@ -489,6 +502,7 @@ const MainShell: React.FC = () => {
                   onExtracted={openRecord}
                   auditsCount={user ? recentAudits.length : 0}
                   onOpenPricing={openPricingModal}
+                  isPaid={isPaidUser}
                 />
               </div>
 
@@ -563,7 +577,7 @@ const MainShell: React.FC = () => {
             </div>
 
             <div className="rounded-xl border border-paper-border bg-white p-5 shadow-sm sm:p-7">
-              <ContractBuilderView onOpenPricing={openPricingModal} isPro={user?.plan === 'pro'} />
+              <ContractBuilderView onOpenPricing={openPricingModal} isPro={isPaidUser} />
             </div>
           </div>
         </main>
@@ -585,6 +599,8 @@ const MainShell: React.FC = () => {
       <PricingModal
         isOpen={pricingModal.open}
         reason={pricingModal.reason}
+        currentPlan={userPlan}
+        onActivatePlan={(p) => setUserPlan(p)}
         onClose={() => setPricingModal((prev) => ({ ...prev, open: false }))}
       />
     </div>
