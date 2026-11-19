@@ -69,18 +69,36 @@ const MainShell: React.FC = () => {
     open: false,
     reason: 'general',
   });
-  const [userPlan, setUserPlan] = useState<PlanTier>(() => {
-    const saved = localStorage.getItem('cg_user_plan') as PlanTier | null;
-    if (saved === 'single' || saved === 'pro') return saved;
-    return 'single';
-  });
+  const [userPlan, setUserPlan] = useState<PlanTier>('free');
 
-  const isPaidUser =
-    userPlan === 'single' ||
-    userPlan === 'pro' ||
-    Boolean(localStorage.getItem('cg_user_plan')) ||
-    user?.email?.toLowerCase().includes('ucu.edu.ua') ||
-    user?.email?.toLowerCase() === 'm.moroz.pn@ucu.edu.ua';
+  useEffect(() => {
+    // Clean up any legacy global plan key
+    try {
+      localStorage.removeItem('cg_user_plan');
+    } catch {
+      // ignore
+    }
+    if (!user) {
+      setUserPlan('free');
+      return;
+    }
+    const normalized = user.email.toLowerCase();
+    // Only the exact paying account has the paid plan activated by default
+    if (normalized === 'm.moroz.pn@ucu.edu.ua' || user.plan === 'single' || user.plan === 'pro') {
+      setUserPlan(user.plan || 'single');
+      return;
+    }
+    // Check if this specific email was explicitly unlocked
+    const accountKey = `cg_plan_${normalized}`;
+    const saved = localStorage.getItem(accountKey) as PlanTier | null;
+    if (saved === 'single' || saved === 'pro') {
+      setUserPlan(saved);
+    } else {
+      setUserPlan('free');
+    }
+  }, [user]);
+
+  const isPaidUser = userPlan === 'single' || userPlan === 'pro';
 
   const openPricingModal = (reason: PricingReason = 'general') => {
     setPricingModal({ open: true, reason });

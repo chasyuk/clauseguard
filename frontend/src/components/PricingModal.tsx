@@ -51,13 +51,15 @@ export const PricingModal: React.FC<PricingModalProps> = ({
       '_blank',
       'noopener,noreferrer'
     );
-    localStorage.setItem('cg_user_plan', plan);
+    const accountKey = user?.email ? `cg_plan_${user.email.toLowerCase()}` : 'cg_plan_guest';
+    localStorage.setItem(accountKey, plan);
     onActivatePlan?.(plan);
     setJustActivated(plan);
   };
 
   const handleManualConfirm = (plan: PlanTier = 'single') => {
-    localStorage.setItem('cg_user_plan', plan);
+    const accountKey = user?.email ? `cg_plan_${user.email.toLowerCase()}` : 'cg_plan_guest';
+    localStorage.setItem(accountKey, plan);
     onActivatePlan?.(plan);
     setJustActivated(plan);
     setTimeout(() => {

@@ -19,6 +19,7 @@ export interface StoredUser {
   email: string;
   passwordHash: string;
   createdAt: string;
+  plan?: 'free' | 'pro' | 'single';
 }
 
 export interface AnalysisMeta {

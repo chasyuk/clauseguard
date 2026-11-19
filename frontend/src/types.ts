@@ -224,7 +224,7 @@ export interface PublicUser {
   id: string;
   name: string;
   email: string;
-  plan?: 'free' | 'pro';
+  plan?: 'free' | 'pro' | 'single';
   auditsUsed?: number;
   auditsLimit?: number;
 }

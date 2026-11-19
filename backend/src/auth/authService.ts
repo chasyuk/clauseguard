@@ -8,6 +8,7 @@ export interface PublicUser {
   name: string;
   email: string;
   createdAt: string;
+  plan?: 'free' | 'pro' | 'single';
 }
 
 export interface AuthTokenPayload {
@@ -94,6 +95,7 @@ function toPublicUser(user: StoredUser): PublicUser {
     name: user.name,
     email: user.email,
     createdAt: user.createdAt,
+    plan: user.plan || (user.email.toLowerCase() === 'm.moroz.pn@ucu.edu.ua' ? 'single' : 'free'),
   };
 }
 
